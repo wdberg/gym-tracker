@@ -21,7 +21,7 @@ Sign in under **Setup** with your email and password. Your log, plan, colours an
 
 - **Program length, 2 to 12 weeks.** Pick it in **Setup**, along with the start date. Run and walk targets and the weekly focus build up across whatever length you choose. Changing the length or start date never deletes what you have logged.
 - **Guide tab.** Gym and at-work routines, runs and walks, 10 quick 20–30 minute sessions and 6 yoga flows. Exercises have a **How to** button with position pictures, steps, what to avoid and a video link. Quick sessions and yoga flows can be marked done and show up in Today and Stats.
-- **Timers.** A workout timer on Today (start, pause, finish & log fills in your minutes; keeps the screen on) and a rest timer that starts when you tick off an exercise, with +15s and skip. Choose the sound it plays when rest is over (beep, chime, bell, boxing bell, whistle, buzzer or off) and its volume in Setup, along with the default rest time, auto-start and a spoken "3, 2, 1" countdown at the end of each rest.
+- **Timers.** A workout timer on Today (start, pause, finish & log fills in your minutes; keeps the screen on) and a rest timer that starts when you tick off an exercise, with +15s and skip. Choose the sound it plays when rest is over (beep, chime, bell, boxing bell, whistle, buzzer or off) and its volume in Setup, along with the default rest time, auto-start and a spoken "3, 2, 1" countdown at the end of each rest, in a voice you choose from those on your device.
 - **Music.** A button to open your Spotify playlist, set once and synced across devices.
 - **Plan tab.**
   - *Routines*: add, rename, reorder and delete exercises in any routine, for both the gym version and the at-work version, and create new routines.
