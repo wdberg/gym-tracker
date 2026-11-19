@@ -10,6 +10,9 @@
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<!-- Cross-device sync (GitHub version only). The anon key is public by design; row-level security keeps each person's rows private. -->
+<script src="vendor/supabase.js"></script>
+<script>window.GT_SYNC={url:'https://fwjcifvjfdbjthgybrsc.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3amNpZnZqZmRianRoZ3licnNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5MzEyOTksImV4cCI6MjExMDUwNzI5OX0.t2PFUg_1FazfrruLOZyQ-SAdvKSpofRVlVZLzxg9eF4'};</script>
 <!--/gh-->
 </head>
 <body>
@@ -195,7 +198,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.0.0';
+var APP_VERSION='2.1.0';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -286,7 +289,7 @@ var COLOR_KEYS=[['accent','Main colour (gym days, buttons, active tab)'],['work'
 
 function normalize(c){
   var o=clone(DEFAULT); if(!c||typeof c!=='object') return o;
-  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
+  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(o.start)) o.start=DEFAULT.start;
   o.weeks=Math.min(12,Math.max(2,parseInt(o.weeks,10)||12));
   if(!Array.isArray(o.week)||o.week.length!==7) o.week=DEFAULT.week.slice();
@@ -344,6 +347,7 @@ var cfgVer=0, cfgSaved=0, cfgTimer=null, cfgQueue=Promise.resolve();
 function setSync(m){
   syncMode=m||syncMode; var el=document.getElementById('sync'); if(!el) return;
   var pending=Object.keys(dirty).length>0||cfgVer!==cfgSaved;
+  if(!col&&sbOn()){el.textContent=sbStatus==='error'?'Offline. Will sync when you are back online.':(pending||sbStatus==='busy')?'Syncing…':'Synced'; return}
   var t = syncMode==='error'?'Could not save to the cloud. Kept on this device.'
         : syncMode==='local'?'Saved on this device'
         : syncMode==='slow'?'Cloud is slow to answer. Showing saved data.'
@@ -351,10 +355,12 @@ function setSync(m){
   el.textContent=t;
 }
 function touch(date){
+  if(state.logs[date]) state.logs[date]._u=Date.now();
   ver[date]=(ver[date]||0)+1; dirty[date]=true; persistLocal(); setSync();
   clearTimeout(timers[date]); timers[date]=setTimeout(function(){flush(date)},700);
 }
 function flush(date){
+  if(!col&&sbOn()){pushLog(date); return}
   if(!col){delete dirty[date]; setSync('local'); return}
   var v=ver[date], data=JSON.parse(JSON.stringify(state.logs[date]||{})); data.date=date;
   queues[date]=(queues[date]||Promise.resolve()).then(function(){return col.doc('d-'+date).set(data)}).then(function(){
@@ -362,9 +368,10 @@ function flush(date){
   },function(){setSync('error')});
 }
 function saveCfg(){
-  cfgVer++; try{localStorage.setItem(CFG_LS,JSON.stringify(cfg))}catch(e){}
+  cfgVer++; cfg.u=Date.now(); try{localStorage.setItem(CFG_LS,JSON.stringify(cfg))}catch(e){}
   setSync(); clearTimeout(cfgTimer);
   cfgTimer=setTimeout(function(){
+    if(!cfgDoc&&sbOn()){pushCfg(); return}
     if(!cfgDoc){cfgSaved=cfgVer; setSync('local'); return}
     var v=cfgVer, body={json:JSON.stringify(cfg)};
     cfgQueue=cfgQueue.then(function(){return cfgDoc.set(body)}).then(function(){cfgSaved=Math.max(cfgSaved,v); setSync(syncMode==='error'?'ok':undefined)},function(){setSync('error')});
@@ -402,6 +409,90 @@ function startDb(){
       },function(){setSync('error')});
     },function(){setSync('local')});
   }catch(e){setSync('local')}
+}
+
+/* ---------- cross-device sync with Supabase (GitHub version) ---------- */
+var SB=null, sbUser=null, sbStatus='ok', lastSync=0, pulling=false;
+function sbOn(){return !!(SB&&sbUser)}
+function sbMark(s){sbStatus=s; setSync()}
+function pushLog(date){
+  var v=ver[date], data=clone(state.logs[date]||{});
+  queues[date]=(queues[date]||Promise.resolve()).then(function(){
+    return SB.from('logs').upsert({user_id:sbUser.id,day:date,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,day'});
+  }).then(function(r){ if(r&&r.error) throw r.error; if(ver[date]===v) delete dirty[date]; lastSync=Date.now(); sbMark('ok') },function(){sbMark('error')})
+    .catch(function(){sbMark('error')});
+}
+function pushCfg(){
+  var v=cfgVer, body={plan:clone(cfg),k14:k14get(),u:cfg.u||Date.now()};
+  cfgQueue=cfgQueue.then(function(){
+    return SB.from('settings').upsert({user_id:sbUser.id,data:body,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  }).then(function(r){ if(r&&r.error) throw r.error; cfgSaved=Math.max(cfgSaved,v); lastSync=Date.now(); sbMark('ok') })
+    .catch(function(){sbMark('error')});
+}
+// Two-way merge: for each day the most recent edit wins (by its _u timestamp).
+function pull(){
+  if(!sbOn()||pulling) return; pulling=true; sbMark('busy');
+  Promise.all([SB.from('logs').select('day,data'),SB.from('settings').select('data').maybeSingle()]).then(function(res){
+    var lr=res[0], sr=res[1]; if(lr.error) throw lr.error; if(sr.error) throw sr.error;
+    var remote={}, changed=false;
+    (lr.data||[]).forEach(function(r){ if(/^\d{4}-\d{2}-\d{2}$/.test(r.day)) remote[r.day]=r.data||{} });
+    Object.keys(remote).forEach(function(d){ if(dirty[d]) return; var loc=state.logs[d];
+      if(!loc||(remote[d]._u||0)>(loc._u||0)){state.logs[d]=remote[d]; changed=true} });
+    Object.keys(state.logs).forEach(function(d){ var loc=state.logs[d], rem=remote[d];
+      if(!hasContent(loc)&&!loc.mode) return;
+      if(!rem||(loc._u||0)>(rem._u||0)||dirty[d]){ if(!loc._u) loc._u=1; ver[d]=(ver[d]||0)+1; dirty[d]=true; pushLog(d) } });
+    var rd=sr.data&&sr.data.data;
+    if(rd&&rd.plan&&(rd.u||0)>(cfg.u||0)&&cfgVer===cfgSaved){
+      cfg=normalize(rd.plan); cfg.u=rd.u; try{localStorage.setItem(CFG_LS,JSON.stringify(cfg))}catch(e){}
+      if(rd.k14&&typeof rd.k14==='object') k14set(rd.k14); applyTheme(); state.sel=clamp(state.sel); changed=true;
+    } else if(!rd||(cfg.u||0)>(rd.u||0)) pushCfg();
+    persistLocal(); lastSync=Date.now(); pulling=false; sbMark('ok');
+    if((changed||state.tab==='setup')&&!typing()&&!state.edit) render();
+  }).catch(function(){pulling=false; sbMark('error')});
+}
+function startSync(){
+  try{
+    if(window.claude||!window.supabase||!window.GT_SYNC) return;
+    SB=window.supabase.createClient(window.GT_SYNC.url,window.GT_SYNC.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+    SB.auth.getSession().then(function(r){ var s=r&&r.data&&r.data.session; if(s&&!sbUser){sbUser=s.user; pull()} if(!typing()) render() });
+    SB.auth.onAuthStateChange(function(ev,session){
+      var was=!!sbUser; sbUser=session?session.user:null;
+      if(!was&&sbUser) pull();
+      if(was!==!!sbUser&&!typing()) render(); setSync();
+    });
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) pull() });
+    window.addEventListener('online',pull);
+    setInterval(function(){ if(!document.hidden) pull() },120000);
+  }catch(e){SB=null}
+}
+function syncPanel(){
+  if(!SB) return '';
+  if(sbUser) return '<div class="panel"><h2>Sync across devices</h2><p class="sub">Signed in as <b>'+esc(sbUser.email||'you')+'</b>. Your log, plan and colours stay the same on every device you sign in on.'+(lastSync?' Last synced at '+new Date(lastSync).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'.':'')+'</p>'
+    +'<div class="btnrow"><button class="btnp sm" data-act="sb-sync">Sync now</button><button class="btnp sm" data-act="sb-out">Sign out</button></div></div>';
+  return '<div class="panel"><h2>Sync across devices</h2><p class="sub">Sign in with your email and password. Your log, plan and colours then stay the same on every device you sign in on.</p>'
+    +'<form id="sb-form" class="fields" autocomplete="on"><div class="field full"><label for="sb-email">Email</label><input id="sb-email" type="email" autocomplete="username" inputmode="email" required></div>'
+    +'<div class="field full"><label for="sb-pass">Password</label><input id="sb-pass" type="password" autocomplete="current-password" required minlength="6"></div>'
+    +'<div class="field full"><div class="btnrow"><button class="btnp primary" type="submit">Sign in</button><button class="btnp" type="button" data-act="sb-up">Create account</button></div></div></form>'
+    +'<p class="sub" id="sb-msg" role="status"></p></div>';
+}
+function sbMsg(t){var m=document.getElementById('sb-msg'); if(m) m.textContent=t}
+function sbCreds(){var e=document.getElementById('sb-email'), p=document.getElementById('sb-pass'); return {email:(e&&e.value||'').trim(),password:p&&p.value||''}}
+function sbSignIn(){
+  var c=sbCreds(); if(!c.email||!c.password){sbMsg('Enter your email and password.'); return}
+  sbMsg('Signing in…');
+  SB.auth.signInWithPassword(c).then(function(r){
+    if(r.error) sbMsg(r.error.message==='Invalid login credentials'?'That email and password do not match. Check them and try again.':r.error.message);
+    else toast('Signed in. Syncing your log.');
+  },function(){sbMsg('Could not reach the sync server. Check your connection and try again.')});
+}
+function sbSignUp(){
+  var c=sbCreds(); if(!c.email||c.password.length<6){sbMsg('Enter your email and a password of at least 6 characters.'); return}
+  sbMsg('Creating your account…');
+  SB.auth.signUp(c).then(function(r){
+    if(r.error) sbMsg(r.error.message);
+    else if(!r.data.session) sbMsg('Account created. Open the email we sent to confirm it, then sign in here.');
+    else toast('Account created. Syncing your log.');
+  },function(){sbMsg('Could not reach the sync server. Check your connection and try again.')});
 }
 
 /* ---------- colours ---------- */
@@ -454,6 +545,7 @@ function viewToday(){
     +'<div class="mid"><div class="eyebrow">'+esc(dShort(date))+' · Week '+p.week+' of '+cfg.weeks+' · Day '+(p.i+1)+' of '+DAYS()+'</div>'
     +(date!==clamp(TODAY)?'<button class="linkbtn" data-act="today">Jump to today</button>':'')+'</div>'
     +'<button class="iconbtn" data-act="day" data-d="1" aria-label="Next day"'+(date>=E()?' disabled':'')+'>›</button></div>';
+  if(SB&&!sbUser&&!hintOff()) h+='<p class="note">Sign in to keep your workouts in sync on all your devices. <span class="btnrow" style="margin-top:8px"><button class="btnp sm primary" data-act="go-setup">Set up sync</button><button class="btnp sm" data-act="hint-off">Not now</button></span></p>';
   if(TODAY<S()&&date===S()) h+='<p class="note">Your block starts on '+esc(dLong(S()))+'. This is your first session.</p>';
   if(TODAY>E()&&date===E()) h+='<p class="note">Your '+cfg.weeks+'-week block finished on '+esc(dLong(E()))+'. Start a new one from Setup.</p>';
   h+='<div><div class="eyebrow">'+esc(p.focus)+'</div><h1 class="title">'+esc(title)+'</h1><p class="sub">'+(sess?esc(sess.dur)+(mode==='work'?' · moderate effort, 2–3 reps in reserve':' · keep 2–3 reps in reserve'):esc(p.target))+'</p></div>';
@@ -475,6 +567,7 @@ function viewToday(){
     +'<div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" data-act="notes" placeholder="Energy, sleep, what to change next time">'+esc(l.notes||'')+'</textarea></div></div></div>';
   return h;
 }
+function hintOff(){try{return localStorage.getItem('gt-sync-hint')==='off'}catch(e){return false}}
 function statusChip(l){var m={done:'Done',short:'Shortened',skip:'Skipped'}; return l.status?'<span class="chip" data-v="'+l.status+'">'+m[l.status]+'</span>':'<span class="chip">Planned</span>'}
 function viewWeek(){
   var p0=plan(state.sel), w=p0.week, ws=addDays(S(),(w-1)*7);
@@ -589,7 +682,7 @@ function viewProgress(){
 
 /* ----- Setup: program length, start date, colours ----- */
 function viewSetup(){
-  var h='<div><div class="eyebrow">Make it yours</div><h1 class="title">Setup</h1></div>';
+  var h='<div><div class="eyebrow">Make it yours</div><h1 class="title">Setup</h1></div>'+syncPanel();
   h+='<div class="panel"><h2>Program length</h2><div class="weeks" role="group" aria-label="Program length in weeks">';
   for(var w=2;w<=12;w++) h+='<button data-act="weeks" data-v="'+w+'" aria-pressed="'+(cfg.weeks===w)+'" aria-label="'+w+' weeks">'+w+'</button>';
   h+='</div><p class="sub"><b>'+cfg.weeks+' weeks</b>, '+esc(dLong(S()))+' to '+esc(dLong(E()))+'. Runs, walks and the weekly focus build up across whatever length you pick.</p>'
@@ -748,12 +841,17 @@ app.addEventListener('click',function(ev){
   else if(a==='preset'){var pr=PRESETS[b.dataset.v]; cfg.preset=b.dataset.v; cfg.theme=pr.t?clone(pr.t):null; saveCfg(); applyTheme(); render()}
   else if(a==='tmode'){cfg.mode=b.dataset.v; saveCfg(); applyTheme(); render()}
   else if(a==='check-update'){checkUpdate(true)}
+  else if(a==='sb-up') sbSignUp();
+  else if(a==='sb-sync') pull();
+  else if(a==='sb-out'){SB.auth.signOut().then(function(){toast('Signed out. Your log stays on this device.')})}
+  else if(a==='go-setup') go('setup');
+  else if(a==='hint-off'){try{localStorage.setItem('gt-sync-hint','off')}catch(x){} render()}
   /* backup + 14-day */
   else if(a==='expcsv') exportCsv();
   else if(a==='expjson') exportJson();
   else if(a==='cpbk') copyBackup();
   else if(a==='imp') document.getElementById('impfile').click();
-  else if(a==='k14'){ev.preventDefault(); var o=k14get(), ki=b.dataset.i; if(o[ki]) delete o[ki]; else o[ki]=1; k14set(o); b.textContent=o[ki]?'Done':'Mark done'; b.style.opacity=o[ki]?'':'.7'; b.setAttribute('aria-pressed',!!o[ki]); var c=0; for(var q=0;q<14;q++) if(o[q]) c++; var nn=document.getElementById('k14n'); if(nn) nn.textContent=c+' of 14 days done.'}
+  else if(a==='k14'){ev.preventDefault(); var o=k14get(), ki=b.dataset.i; if(o[ki]) delete o[ki]; else o[ki]=1; k14set(o); if(sbOn()) saveCfg(); b.textContent=o[ki]?'Done':'Mark done'; b.style.opacity=o[ki]?'':'.7'; b.setAttribute('aria-pressed',!!o[ki]); var c=0; for(var q=0;q<14;q++) if(o[q]) c++; var nn=document.getElementById('k14n'); if(nn) nn.textContent=c+' of 14 days done.'}
 });
 app.addEventListener('input',function(ev){
   var el=ev.target, ds=el.dataset||{};
@@ -776,6 +874,7 @@ app.addEventListener('change',function(ev){
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
   else if(el.dataset&&el.dataset.color) render();
 });
+app.addEventListener('submit',function(ev){ if(ev.target&&ev.target.id==='sb-form'){ev.preventDefault(); sbSignIn()} });
 window.addEventListener('hashchange',route);
 
 /* ---------- auto update (only the GitHub-hosted copy uses a service worker) ---------- */
@@ -805,7 +904,7 @@ try{
   }
 }catch(e){}
 
-applyTheme(); route(); startDb();
+applyTheme(); startSync(); route(); startDb();
 })();
 </script>
 <!--/page-->

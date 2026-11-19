@@ -5,9 +5,17 @@ A trek-training workout tracker you can install on your phone. Gym and at-work s
 The same app runs in two places:
 
 - **The Claude page** (Gym Guide & Tracker in your Claude account) saves your log and plan to your Claude account, so it is the same on every device.
-- **This GitHub version** saves on the phone you use it on, works offline and updates itself.
+- **This GitHub version** works offline, updates itself, and syncs across devices when you sign in (Setup → Sync across devices).
 
 To move data between them, use **Stats → Download backup** in one, then **Import backup** in the other. The backup includes your log, your plan and your colours.
+
+## Sync across devices (GitHub version)
+
+Sign in under **Setup** with your email and password. Your log, plan, colours and 14-day progress are stored in Supabase (project `gym-tracker`) and merged on every device you sign in on. For each day, the most recent edit wins. Edits made offline sync when you're back online.
+
+- Tables: `logs` (one row per day) and `settings` (plan, colours, 14-day progress). Row-level security means each account can only read and write its own rows.
+- The key in `index.html` is Supabase's public anon key. It is safe to publish; the security rules above are what protect the data.
+- The sync library is bundled in `vendor/supabase.js` (supabase-js 2.45.4, MIT licence) so the app keeps working offline.
 
 ## Features
 
@@ -39,6 +47,7 @@ python3 -m http.server 8000
 | --- | --- |
 | `index.html` | The whole app (layout, styles and logic). The part between `<!--page-->` and `<!--/page-->` is also what the Claude page uses. |
 | `sw.js` | Service worker for offline use and auto-update |
+| `vendor/supabase.js` | Supabase client used for sign-in and sync |
 | `manifest.webmanifest`, `icons/` | Make the app installable |
 | `.github/workflows/deploy.yml` | Publishes to GitHub Pages on every push to `main` |
 
