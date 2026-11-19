@@ -13,14 +13,14 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   deploy:
     # Pages only accepts deploys from the default branch, so skip pushes to the other one.
     if: github.ref_name == github.event.repository.default_branch
+    # Set on the job (not the workflow) so a skipped run never cancels a real deploy.
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     environment:
       name: github-pages
