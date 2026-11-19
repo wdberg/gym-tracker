@@ -232,7 +232,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.5.0';
+var APP_VERSION='2.6.0';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -323,7 +323,7 @@ var COLOR_KEYS=[['accent','Main colour (gym days, buttons, active tab)'],['work'
 
 function normalize(c){
   var o=clone(DEFAULT); if(!c||typeof c!=='object') return o;
-  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound','soundType','volume','countdown'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
+  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound','soundType','volume','countdown','voice'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(o.start)) o.start=DEFAULT.start;
   o.weeks=Math.min(12,Math.max(2,parseInt(o.weeks,10)||12));
   if(!Array.isArray(o.week)||o.week.length!==7) o.week=DEFAULT.week.slice();
@@ -1120,10 +1120,27 @@ function countdownOn(){return cfg.countdown!==false}
 function speak(text){
   try{
     if(!('speechSynthesis' in window)) return;
-    var u=new SpeechSynthesisUtterance(text); u.lang='en-AU'; u.rate=1.15; u.volume=soundVol()/100;
+    var u=new SpeechSynthesisUtterance(text), v=chosenVoice(); u.lang=v?v.lang:'en-AU'; if(v) u.voice=v; u.rate=1.15; u.volume=soundVol()/100;
     window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
   }catch(e){}
 }
+// English voices installed on this device. They differ between phones, so a voice chosen on one
+// device falls back to that device's default where it is missing.
+function voiceList(){
+  try{
+    if(!('speechSynthesis' in window)) return [];
+    return (window.speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang)})
+      .sort(function(a,b){var au=function(v){return /AU/i.test(v.lang)?0:1}; return au(a)-au(b)||a.lang.localeCompare(b.lang)||a.name.localeCompare(b.name)});
+  }catch(e){return []}
+}
+function chosenVoice(){
+  if(!cfg.voice) return null;
+  var vs=voiceList(); for(var i=0;i<vs.length;i++) if(vs[i].voiceURI===cfg.voice||vs[i].name===cfg.voice) return vs[i];
+  return null;
+}
+var LANGS={AU:'Australian',GB:'British',US:'American',IE:'Irish',ZA:'South African',IN:'Indian',NZ:'New Zealand',SC:'Scottish'};
+function voiceLabel(v){var m=String(v.lang).toUpperCase().match(/[-_]([A-Z]{2})/), acc=m&&LANGS[m[1]]; return v.name+(acc?' ('+acc+')':' ('+v.lang+')')}
+try{ if('speechSynthesis' in window&&window.speechSynthesis.addEventListener) window.speechSynthesis.addEventListener('voiceschanged',function(){ if(state.tab==='setup'&&!typing()) render() }) }catch(e){}
 function unlockSpeech(){ // iPhones only allow speech after a tap, so say nothing once on the first tap
   if(speechOK) return; speechOK=true;
   try{ if('speechSynthesis' in window){var u=new SpeechSynthesisUtterance(' '); u.volume=0; window.speechSynthesis.speak(u)} }catch(e){}
@@ -1138,12 +1155,22 @@ setInterval(function(){
   var pl=document.getElementById('tm-pill'); if(pl) pl.textContent='⏱ '+clock(ms);
   restTick();
 },250);
+function voicePicker(){
+  var vs=voiceList(), cur=chosenVoice(), missing=cfg.voice&&!cur&&vs.length;
+  return '<div class="field"><label for="set-voice">Countdown voice</label><div class="btnrow" style="flex-wrap:nowrap">'
+    +'<select id="set-voice" style="flex:1;min-width:0;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)">'
+    +'<option value="">Phone default</option>'+vs.map(function(v){return '<option value="'+esc(v.voiceURI)+'"'+(cur&&cur.voiceURI===v.voiceURI?' selected':'')+'>'+esc(voiceLabel(v))+'</option>'}).join('')+'</select>'
+    +'<button class="btnp sm" data-act="voice-test">▶ Play</button></div>'
+    +(missing?'<p class="sub">The voice you picked on another device is not on this one, so this device uses its default.</p>':'')
+    +(!vs.length?'<p class="sub">This browser has not listed its voices yet. The phone default will be used.</p>':'')+'</div>';
+}
 function timersSetup(){
   var r=restSecs();
   return '<div class="panel"><h2>Timers</h2><div class="field"><span class="lbl">Default rest between sets</span><div class="btnrow">'
     +[30,45,60,90,120,180].map(function(x){return '<button class="btnp sm'+(x===r?' primary':'')+'" data-act="set-rest" data-s="'+x+'" aria-pressed="'+(x===r)+'">'+(x%60?x+'s':(x/60)+' min')+'</button>'}).join('')+'</div></div>'
     +'<label class="check"><input type="checkbox" id="set-autorest"'+(cfg.autoRest!==false?' checked':'')+'> Start the rest timer when I tick off an exercise</label>'
     +'<label class="check"><input type="checkbox" id="set-countdown"'+(countdownOn()?' checked':'')+'> Count down the last 3 seconds out loud</label>'
+    +(countdownOn()?voicePicker():'')
     +'<div class="field"><span class="lbl">Sound when rest is over</span><div class="btnrow">'
     +SOUNDS.map(function(o){var on=soundType()===o[0]; return '<button class="btnp sm'+(on?' primary':'')+'" data-act="set-snd" data-v="'+o[0]+'" aria-pressed="'+on+'">'+(o[0]==='off'?'':'♪ ')+o[1]+'</button>'}).join('')+'</div></div>'
     +(soundType()==='off'&&!countdownOn()?'':'<div class="field"><label for="set-vol">Volume: '+soundVol()+'%</label><input type="range" id="set-vol" min="10" max="100" step="10" value="'+soundVol()+'" style="accent-color:var(--accent)"></div>')
@@ -1229,6 +1256,7 @@ app.addEventListener('click',function(ev){
   else if(a==='tm-reset') tmReset();
   else if(a==='tm-open'){var td=tmGet().date; if(td) state.sel=clamp(td); go('today')}
   else if(a==='rest') restStart(+b.dataset.s);
+  else if(a==='voice-test'){unlockAudio(); speak('3, 2, 1')}
   else if(a==='set-snd'){cfg.soundType=b.dataset.v; cfg.sound=b.dataset.v!=='off'; saveCfg(); render(); unlockAudio(); playSound(b.dataset.v)}
   else if(a==='set-rest'){cfg.rest=+b.dataset.s; saveCfg(); render(); toast('Default rest: '+(cfg.rest%60?cfg.rest+' seconds':(cfg.rest/60)+' min'))}
   else if(a==='status'){var l=W(date); l.status=(l.status===b.dataset.v)?'':b.dataset.v; if(!l.status) delete l.status; touch(date); render()}
@@ -1303,6 +1331,7 @@ app.addEventListener('change',function(ev){
   else if(el.dataset&&el.dataset.slot!==undefined){cfg.week[+el.dataset.slot]=el.value; saveCfg(); toast(wd(addDays(S(),+el.dataset.slot))+': '+slotLabel(el.value))}
   else if(el.id==='set-start'&&/^\d{4}-\d{2}-\d{2}$/.test(el.value)){cfg.start=el.value; saveCfg(); state.sel=clamp(state.sel); render(); toast('Start date changed')}
   else if(el.id==='set-autorest'){cfg.autoRest=el.checked; saveCfg()}
+  else if(el.id==='set-voice'){cfg.voice=el.value; saveCfg(); unlockAudio(); speak('3, 2, 1')}
   else if(el.id==='set-countdown'){cfg.countdown=el.checked; saveCfg(); render(); if(el.checked){unlockAudio(); speak('3, 2, 1')}}
   else if(el.id==='set-vol'){cfg.volume=+el.value; saveCfg(); render(); unlockAudio(); playSound()}
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
