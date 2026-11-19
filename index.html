@@ -198,7 +198,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.1.1';
+var APP_VERSION='2.1.2';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -468,7 +468,12 @@ function startSync(){
 function syncPanel(){
   if(!SB) return '';
   if(sbUser) return '<div class="panel"><h2>Sync across devices</h2><p class="sub">Signed in as <b>'+esc(sbUser.email||'you')+'</b>. Your log, plan and colours stay the same on every device you sign in on.'+(lastSync?' Last synced at '+new Date(lastSync).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'.':'')+'</p>'
-    +'<div class="btnrow"><button class="btnp sm" data-act="sb-sync">Sync now</button><button class="btnp sm" data-act="sb-out">Sign out</button></div></div>';
+    +'<div class="btnrow"><button class="btnp sm" data-act="sb-sync">Sync now</button><button class="btnp sm" data-act="sb-out">Sign out</button></div>'
+    +'<details><summary class="lbl" style="cursor:pointer">Change password</summary><form id="pw-form" class="fields" style="margin-top:10px" autocomplete="on">'
+    +'<input type="email" autocomplete="username" value="'+esc(sbUser.email||'')+'" hidden>'
+    +'<div class="field full"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password" minlength="6" required></div>'
+    +'<div class="field full"><label for="pw-again">Type it again</label><input id="pw-again" type="password" autocomplete="new-password" minlength="6" required></div>'
+    +'<div class="field full"><button class="btnp primary" type="submit">Save new password</button></div></form><p class="sub" id="pw-msg" role="status"></p></details></div>';
   return '<div class="panel"><h2>Sync across devices</h2><p class="sub">Sign in with your email and password. Your log, plan and colours then stay the same on every device you sign in on.</p>'
     +'<form id="sb-form" class="fields" autocomplete="on"><div class="field full"><label for="sb-email">Email</label><input id="sb-email" type="email" autocomplete="username" inputmode="email" required></div>'
     +'<div class="field full"><label for="sb-pass">Password</label><input id="sb-pass" type="password" autocomplete="current-password" required minlength="6"></div>'
@@ -495,6 +500,16 @@ function sbSignIn(){
     if(r.error) sbMsg(sbErr(r.error));
     else toast('Signed in. Syncing your log.');
   },function(){sbBusy(false); sbMsg('Could not reach the sync server. Check your connection and try again.')});
+}
+function sbChangePw(){
+  var a=document.getElementById('pw-new').value, b=document.getElementById('pw-again').value, m=document.getElementById('pw-msg');
+  function say(t){if(m) m.textContent=t}
+  if(a.length<6){say('Use at least 6 characters.'); return}
+  if(a!==b){say('The two passwords are different. Type them again.'); return}
+  say('Saving…');
+  SB.auth.updateUser({password:a}).then(function(r){
+    if(r.error) say(sbErr(r.error)); else {say(''); toast('Password changed. Use it next time you sign in.'); render()}
+  },function(){say('Could not reach the sync server. Check your connection and try again.')});
 }
 function sbSignUp(){
   var c=sbCreds(); if(!c.email||c.password.length<6){sbMsg('Enter your email and a password of at least 6 characters.'); return}
@@ -887,7 +902,10 @@ app.addEventListener('change',function(ev){
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
   else if(el.dataset&&el.dataset.color) render();
 });
-app.addEventListener('submit',function(ev){ if(ev.target&&ev.target.id==='sb-form'){ev.preventDefault(); sbSignIn()} });
+app.addEventListener('submit',function(ev){
+  if(ev.target&&ev.target.id==='sb-form'){ev.preventDefault(); sbSignIn()}
+  if(ev.target&&ev.target.id==='pw-form'){ev.preventDefault(); sbChangePw()}
+});
 window.addEventListener('hashchange',route);
 
 /* ---------- auto update (only the GitHub-hosted copy uses a service worker) ---------- */
