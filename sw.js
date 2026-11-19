@@ -1,10 +1,10 @@
 /* Service worker: makes the app work offline and auto-update.
  * Bump CACHE_VERSION (and APP_VERSION in index.html) whenever you release changes —
  * the deploy workflow also stamps a unique build id below so every push triggers an update. */
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.2.0';
 const BUILD_ID = '__BUILD_ID__';
 const CACHE = `gym-tracker-${CACHE_VERSION}-${BUILD_ID}`;
-const ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg'];
+const ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'vendor/supabase.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

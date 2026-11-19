@@ -10,6 +10,9 @@
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<!-- Cross-device sync (GitHub version only). The anon key is public by design; row-level security keeps each person's rows private. -->
+<script src="vendor/supabase.js"></script>
+<script>window.GT_SYNC={url:'https://fwjcifvjfdbjthgybrsc.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3amNpZnZqZmRianRoZ3licnNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5MzEyOTksImV4cCI6MjExMDUwNzI5OX0.t2PFUg_1FazfrruLOZyQ-SAdvKSpofRVlVZLzxg9eF4'};</script>
 <!--/gh-->
 </head>
 <body>
@@ -178,12 +181,34 @@ ul.plain{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6
 .colorrow input{width:56px; height:40px; border:1px solid var(--line); border-radius:10px; background:var(--bg); padding:2px; cursor:pointer}
 .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(76px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:99px; font-weight:600; font-size:15px; z-index:20; max-width:calc(100% - 32px)}
 
+.howbtn{margin-left:6px; min-height:30px; font:600 12px var(--body,system-ui); letter-spacing:.05em; text-transform:uppercase; padding:3px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface2,#fff); color:var(--muted); cursor:pointer; vertical-align:middle}
+.howbtn[aria-expanded="true"]{color:var(--ink); border-color:var(--accent,#D1400E)}
+.how{background:var(--surface2,#fff); border:1px solid var(--line); border-radius:12px; padding:12px; margin:6px 0 10px}
+.how .hsv{display:block; width:100%; max-height:150px}
+.how .hsv.one{max-width:170px; margin:0 auto}
+.hsv polyline{fill:none; stroke-width:4; stroke-linecap:round; stroke-linejoin:round}
+.hsv .bod,.hsv .leg{stroke:var(--ink)} .hsv .arm{stroke:var(--accent,#D1400E)} .hsv .far{stroke:var(--muted)}
+.hsv .hd{fill:none; stroke:var(--ink); stroke-width:3} .hsv .hp{fill:var(--line)} .hsv .kb{fill:var(--ink)}
+.hsv .hb{stroke:var(--ink); stroke-width:3; stroke-linecap:round} .hsv .fl{stroke:var(--line); stroke-width:2} .hsv .fn{font:700 11px system-ui; fill:var(--muted)}
+.how ol{margin:10px 0 6px; padding-left:20px; font-size:15px; line-height:1.4}
+.how .tip{font-size:14px; color:var(--muted); margin:6px 0}
+.how .vid{display:inline-block; margin-top:4px; font-weight:600; color:var(--accent,#D1400E)}
+
+.musicrow{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:2px 0 12px}
+.musicbtn{display:inline-flex; align-items:center; min-height:40px; padding:6px 14px; border-radius:999px; border:1px solid var(--line); background:var(--surface2,#fff); color:var(--ink); font-weight:600; text-decoration:none}
+.musicedit{background:var(--surface2,#fff); border:1px solid var(--line); border-radius:12px; padding:12px; margin:2px 0 12px; display:flex; flex-direction:column; gap:10px}
+.musicedit label{font:600 13px/1.2 var(--body,system-ui); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.musicedit input{width:100%; min-height:46px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--bg)}
+
+.xdone{margin:8px 0}
+.xdone[aria-pressed="true"]{background:var(--done,#2e7d32); color:#fff; border-color:transparent}
+
 nav.tabs{
   position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--line);
   padding:6px max(10px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));
 }
-nav.tabs .in{max-width:640px; margin:0 auto; display:grid; grid-template-columns:repeat(6,1fr); gap:2px}
-nav.tabs a{display:flex; justify-content:center; align-items:center; min-height:48px; border-radius:10px; text-decoration:none; color:var(--muted); font:700 14px var(--display); letter-spacing:.02em; text-transform:uppercase; text-align:center}
+nav.tabs .in{max-width:640px; margin:0 auto; display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+nav.tabs a{display:flex; justify-content:center; align-items:center; min-height:48px; border-radius:10px; text-decoration:none; color:var(--muted); font:700 13px var(--display); letter-spacing:.01em; text-transform:uppercase; text-align:center}
 nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); box-shadow:inset 0 -3px 0 var(--accent)}
 @media (prefers-reduced-motion:no-preference){ .chk,.cell,.seg button{transition:background .15s,border-color .15s} }
 </style>
@@ -195,7 +220,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.0.0';
+var APP_VERSION='2.2.0';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -286,7 +311,7 @@ var COLOR_KEYS=[['accent','Main colour (gym days, buttons, active tab)'],['work'
 
 function normalize(c){
   var o=clone(DEFAULT); if(!c||typeof c!=='object') return o;
-  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
+  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(o.start)) o.start=DEFAULT.start;
   o.weeks=Math.min(12,Math.max(2,parseInt(o.weeks,10)||12));
   if(!Array.isArray(o.week)||o.week.length!==7) o.week=DEFAULT.week.slice();
@@ -331,19 +356,20 @@ function sessOf(p,l){return p.weights?p.r[modeOf(p,l)]:null}
 
 /* ---------- state + storage ---------- */
 var LS='gymlog.v1';
-var state={tab:'today',sel:clamp(TODAY),ptab:'routines',edit:null};
+var state={tab:'today',sel:clamp(TODAY),ptab:'routines',gtab:'gym',edit:null};
 state.logs={};
 try{var raw=localStorage.getItem(LS); if(raw) state.logs=JSON.parse(raw)||{}}catch(e){}
 function persistLocal(){try{localStorage.setItem(LS,JSON.stringify(state.logs))}catch(e){}}
 function L(date){return state.logs[date]||{}}
 function W(date){return state.logs[date]||(state.logs[date]={})}
-function hasContent(l){return !!(l&&(l.status||l.minutes||l.km||l.notes||(l.ex&&Object.keys(l.ex).length)))}
+function hasContent(l){return !!(l&&(l.status||l.minutes||l.km||l.notes||(l.x&&l.x.length)||(l.ex&&Object.keys(l.ex).length)))}
 
 var db=null, col=null, cfgDoc=null, dirty={}, ver={}, timers={}, queues={}, firstReal=false, loadTimer=null, syncMode='local';
 var cfgVer=0, cfgSaved=0, cfgTimer=null, cfgQueue=Promise.resolve();
 function setSync(m){
   syncMode=m||syncMode; var el=document.getElementById('sync'); if(!el) return;
   var pending=Object.keys(dirty).length>0||cfgVer!==cfgSaved;
+  if(!col&&sbOn()){el.textContent=sbStatus==='error'?'Offline. Will sync when you are back online.':(pending||sbStatus==='busy')?'Syncing…':'Synced'; return}
   var t = syncMode==='error'?'Could not save to the cloud. Kept on this device.'
         : syncMode==='local'?'Saved on this device'
         : syncMode==='slow'?'Cloud is slow to answer. Showing saved data.'
@@ -351,10 +377,12 @@ function setSync(m){
   el.textContent=t;
 }
 function touch(date){
+  if(state.logs[date]) state.logs[date]._u=Date.now();
   ver[date]=(ver[date]||0)+1; dirty[date]=true; persistLocal(); setSync();
   clearTimeout(timers[date]); timers[date]=setTimeout(function(){flush(date)},700);
 }
 function flush(date){
+  if(!col&&sbOn()){pushLog(date); return}
   if(!col){delete dirty[date]; setSync('local'); return}
   var v=ver[date], data=JSON.parse(JSON.stringify(state.logs[date]||{})); data.date=date;
   queues[date]=(queues[date]||Promise.resolve()).then(function(){return col.doc('d-'+date).set(data)}).then(function(){
@@ -362,9 +390,10 @@ function flush(date){
   },function(){setSync('error')});
 }
 function saveCfg(){
-  cfgVer++; try{localStorage.setItem(CFG_LS,JSON.stringify(cfg))}catch(e){}
+  cfgVer++; cfg.u=Date.now(); try{localStorage.setItem(CFG_LS,JSON.stringify(cfg))}catch(e){}
   setSync(); clearTimeout(cfgTimer);
   cfgTimer=setTimeout(function(){
+    if(!cfgDoc&&sbOn()){pushCfg(); return}
     if(!cfgDoc){cfgSaved=cfgVer; setSync('local'); return}
     var v=cfgVer, body={json:JSON.stringify(cfg)};
     cfgQueue=cfgQueue.then(function(){return cfgDoc.set(body)}).then(function(){cfgSaved=Math.max(cfgSaved,v); setSync(syncMode==='error'?'ok':undefined)},function(){setSync('error')});
@@ -402,6 +431,118 @@ function startDb(){
       },function(){setSync('error')});
     },function(){setSync('local')});
   }catch(e){setSync('local')}
+}
+
+/* ---------- cross-device sync with Supabase (GitHub version) ---------- */
+var SB=null, sbUser=null, sbStatus='ok', lastSync=0, pulling=false;
+function sbOn(){return !!(SB&&sbUser)}
+function sbMark(s){sbStatus=s; setSync()}
+function pushLog(date){
+  var v=ver[date], data=clone(state.logs[date]||{});
+  queues[date]=(queues[date]||Promise.resolve()).then(function(){
+    return SB.from('logs').upsert({user_id:sbUser.id,day:date,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,day'});
+  }).then(function(r){ if(r&&r.error) throw r.error; if(ver[date]===v) delete dirty[date]; lastSync=Date.now(); sbMark('ok') },function(){sbMark('error')})
+    .catch(function(){sbMark('error')});
+}
+function pushCfg(){
+  var v=cfgVer, body={plan:clone(cfg),k14:k14get(),u:cfg.u||Date.now()};
+  cfgQueue=cfgQueue.then(function(){
+    return SB.from('settings').upsert({user_id:sbUser.id,data:body,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  }).then(function(r){ if(r&&r.error) throw r.error; cfgSaved=Math.max(cfgSaved,v); lastSync=Date.now(); sbMark('ok') })
+    .catch(function(){sbMark('error')});
+}
+// Two-way merge: for each day the most recent edit wins (by its _u timestamp).
+function pull(){
+  if(!sbOn()||pulling) return; pulling=true; sbMark('busy');
+  Promise.all([SB.from('logs').select('day,data'),SB.from('settings').select('data').maybeSingle()]).then(function(res){
+    var lr=res[0], sr=res[1]; if(lr.error) throw lr.error; if(sr.error) throw sr.error;
+    var remote={}, changed=false;
+    (lr.data||[]).forEach(function(r){ if(/^\d{4}-\d{2}-\d{2}$/.test(r.day)) remote[r.day]=r.data||{} });
+    Object.keys(remote).forEach(function(d){ if(dirty[d]) return; var loc=state.logs[d];
+      if(!loc||(remote[d]._u||0)>(loc._u||0)){state.logs[d]=remote[d]; changed=true} });
+    Object.keys(state.logs).forEach(function(d){ var loc=state.logs[d], rem=remote[d];
+      if(!hasContent(loc)&&!loc.mode) return;
+      if(!rem||(loc._u||0)>(rem._u||0)||dirty[d]){ if(!loc._u) loc._u=1; ver[d]=(ver[d]||0)+1; dirty[d]=true; pushLog(d) } });
+    var rd=sr.data&&sr.data.data;
+    if(rd&&rd.plan&&(rd.u||0)>(cfg.u||0)&&cfgVer===cfgSaved){
+      cfg=normalize(rd.plan); cfg.u=rd.u; try{localStorage.setItem(CFG_LS,JSON.stringify(cfg))}catch(e){}
+      if(rd.k14&&typeof rd.k14==='object') k14set(rd.k14); applyTheme(); state.sel=clamp(state.sel); changed=true;
+    } else if(!rd||(cfg.u||0)>(rd.u||0)) pushCfg();
+    persistLocal(); lastSync=Date.now(); pulling=false; sbMark('ok');
+    if((changed||state.tab==='setup')&&!typing()&&!state.edit) render();
+  }).catch(function(){pulling=false; sbMark('error')});
+}
+function startSync(){
+  try{
+    if(window.claude||!window.supabase||!window.GT_SYNC) return;
+    SB=window.supabase.createClient(window.GT_SYNC.url,window.GT_SYNC.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+    SB.auth.getSession().then(function(r){ var s=r&&r.data&&r.data.session; if(s&&!sbUser){sbUser=s.user; pull()} if(!typing()) render() });
+    SB.auth.onAuthStateChange(function(ev,session){
+      var was=!!sbUser; sbUser=session?session.user:null;
+      if(!was&&sbUser) pull();
+      if(was!==!!sbUser&&!typing()) render(); setSync();
+    });
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) pull() });
+    window.addEventListener('online',pull);
+    setInterval(function(){ if(!document.hidden) pull() },120000);
+  }catch(e){SB=null}
+}
+function syncPanel(){
+  if(!SB) return '';
+  if(sbUser) return '<div class="panel"><h2>Sync across devices</h2><p class="sub">Signed in as <b>'+esc(sbUser.email||'you')+'</b>. Your log, plan and colours stay the same on every device you sign in on.'+(lastSync?' Last synced at '+new Date(lastSync).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'.':'')+'</p>'
+    +'<div class="btnrow"><button class="btnp sm" data-act="sb-sync">Sync now</button><button class="btnp sm" data-act="sb-out">Sign out</button></div>'
+    +'<details><summary class="lbl" style="cursor:pointer">Change password</summary><form id="pw-form" class="fields" style="margin-top:10px" autocomplete="on">'
+    +'<input type="email" autocomplete="username" value="'+esc(sbUser.email||'')+'" hidden>'
+    +'<div class="field full"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password" minlength="6" required></div>'
+    +'<div class="field full"><label for="pw-again">Type it again</label><input id="pw-again" type="password" autocomplete="new-password" minlength="6" required></div>'
+    +'<div class="field full"><button class="btnp primary" type="submit">Save new password</button></div></form><p class="sub" id="pw-msg" role="status"></p></details></div>';
+  return '<div class="panel"><h2>Sync across devices</h2><p class="sub">Sign in with your email and password. Your log, plan and colours then stay the same on every device you sign in on.</p>'
+    +'<form id="sb-form" class="fields" autocomplete="on"><div class="field full"><label for="sb-email">Email</label><input id="sb-email" type="email" autocomplete="username" inputmode="email" required></div>'
+    +'<div class="field full"><label for="sb-pass">Password</label><input id="sb-pass" type="password" autocomplete="current-password" required minlength="6"></div>'
+    +'<div class="field full"><div class="btnrow"><button class="btnp primary" type="submit">Sign in</button><button class="btnp" type="button" data-act="sb-up">Create account</button></div></div></form>'
+    +'<p class="sub" id="sb-msg" role="status"></p></div>';
+}
+function sbMsg(t){var m=document.getElementById('sb-msg'); if(m) m.textContent=t}
+function sbBusy(on){var f=document.getElementById('sb-form'); if(f) Array.prototype.forEach.call(f.querySelectorAll('button'),function(b){b.disabled=on})}
+function sbErr(e){var c=e&&e.code||'', m=e&&e.message||'';
+  if(c==='invalid_credentials'||m==='Invalid login credentials') return 'That email and password do not match. Check for typos, or try the other email address you might have used.';
+  if(c==='email_not_confirmed'||/not confirmed/i.test(m)) return 'This account is not confirmed yet. Tap the link in the confirmation email first, then sign in here.';
+  if(c==='over_email_send_rate_limit'||c==='over_request_rate_limit'||e.status===429) return 'Too many tries in a short time. Wait a minute, then try again.';
+  if(c==='user_already_exists'||/already registered/i.test(m)) return 'An account with this email already exists. Use Sign in instead.';
+  if(c==='weak_password') return 'Choose a longer password (at least 6 characters).';
+  return m||'Something went wrong. Try again.';
+}
+function sbCreds(){var e=document.getElementById('sb-email'), p=document.getElementById('sb-pass'); return {email:(e&&e.value||'').trim(),password:p&&p.value||''}}
+function sbSignIn(){
+  var c=sbCreds(); if(!c.email||!c.password){sbMsg('Enter your email and password.'); return}
+  sbMsg('Signing in…');
+  sbBusy(true);
+  SB.auth.signInWithPassword(c).then(function(r){
+    sbBusy(false);
+    if(r.error) sbMsg(sbErr(r.error));
+    else toast('Signed in. Syncing your log.');
+  },function(){sbBusy(false); sbMsg('Could not reach the sync server. Check your connection and try again.')});
+}
+function sbChangePw(){
+  var a=document.getElementById('pw-new').value, b=document.getElementById('pw-again').value, m=document.getElementById('pw-msg');
+  function say(t){if(m) m.textContent=t}
+  if(a.length<6){say('Use at least 6 characters.'); return}
+  if(a!==b){say('The two passwords are different. Type them again.'); return}
+  say('Saving…');
+  SB.auth.updateUser({password:a}).then(function(r){
+    if(r.error) say(sbErr(r.error)); else {say(''); toast('Password changed. Use it next time you sign in.'); render()}
+  },function(){say('Could not reach the sync server. Check your connection and try again.')});
+}
+function sbSignUp(){
+  var c=sbCreds(); if(!c.email||c.password.length<6){sbMsg('Enter your email and a password of at least 6 characters.'); return}
+  sbMsg('Creating your account…');
+  sbBusy(true);
+  SB.auth.signUp(c).then(function(r){
+    sbBusy(false);
+    if(r.error) sbMsg(sbErr(r.error));
+    else if(!r.data.session) sbMsg('Account created. Tap the link in the email we sent you (the page it opens may not load, which is fine), then come back and sign in here.');
+    else toast('Account created. Syncing your log.');
+  },function(){sbBusy(false); sbMsg('Could not reach the sync server. Check your connection and try again.')});
 }
 
 /* ---------- colours ---------- */
@@ -454,6 +595,7 @@ function viewToday(){
     +'<div class="mid"><div class="eyebrow">'+esc(dShort(date))+' · Week '+p.week+' of '+cfg.weeks+' · Day '+(p.i+1)+' of '+DAYS()+'</div>'
     +(date!==clamp(TODAY)?'<button class="linkbtn" data-act="today">Jump to today</button>':'')+'</div>'
     +'<button class="iconbtn" data-act="day" data-d="1" aria-label="Next day"'+(date>=E()?' disabled':'')+'>›</button></div>';
+  if(SB&&!sbUser&&!hintOff()) h+='<p class="note">Sign in to keep your workouts in sync on all your devices. <span class="btnrow" style="margin-top:8px"><button class="btnp sm primary" data-act="go-setup">Set up sync</button><button class="btnp sm" data-act="hint-off">Not now</button></span></p>';
   if(TODAY<S()&&date===S()) h+='<p class="note">Your block starts on '+esc(dLong(S()))+'. This is your first session.</p>';
   if(TODAY>E()&&date===E()) h+='<p class="note">Your '+cfg.weeks+'-week block finished on '+esc(dLong(E()))+'. Start a new one from Setup.</p>';
   h+='<div><div class="eyebrow">'+esc(p.focus)+'</div><h1 class="title">'+esc(title)+'</h1><p class="sub">'+(sess?esc(sess.dur)+(mode==='work'?' · moderate effort, 2–3 reps in reserve':' · keep 2–3 reps in reserve'):esc(p.target))+'</p></div>';
@@ -473,8 +615,10 @@ function viewToday(){
     +'<div class="fields"><div class="field"><label for="f-min">Minutes</label><input id="f-min" data-act="min" inputmode="numeric" autocomplete="off" value="'+esc(l.minutes||'')+'"></div>'
     +'<div class="field"><label for="f-km">Distance (km)</label><input id="f-km" data-act="km" inputmode="decimal" autocomplete="off" value="'+esc(l.km||'')+'"></div>'
     +'<div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" data-act="notes" placeholder="Energy, sleep, what to change next time">'+esc(l.notes||'')+'</textarea></div></div></div>';
+  h+=xToday(date);
   return h;
 }
+function hintOff(){try{return localStorage.getItem('gt-sync-hint')==='off'}catch(e){return false}}
 function statusChip(l){var m={done:'Done',short:'Shortened',skip:'Skipped'}; return l.status?'<span class="chip" data-v="'+l.status+'">'+m[l.status]+'</span>':'<span class="chip">Planned</span>'}
 function viewWeek(){
   var p0=plan(state.sel), w=p0.week, ws=addDays(S(),(w-1)*7);
@@ -564,9 +708,9 @@ function viewProgress(){
   }
   var streak=0, d0=L(TODAY).status?TODAY:addDays(TODAY,-1);
   while(d0>=S()&&d0<=E()&&(L(d0).status==='done'||L(d0).status==='short')){streak++; d0=addDays(d0,-1)}
-  var pct=den?Math.round(cons/den*100)+'%':'–';
+  var exs=xAll(), pct=den?Math.round(cons/den*100)+'%':'–';
   var h='<div><div class="eyebrow">'+esc(dShort(S())+' – '+dShort(E()))+'</div><h1 class="title">Progress</h1></div>';
-  h+='<div class="stats"><div class="stat"><b>'+(done+short)+'</b><span>sessions logged of '+N+'</span></div><div class="stat"><b>'+pct+'</b><span>consistency so far</span></div><div class="stat"><b>'+streak+'</b><span>day streak</span></div><div class="stat"><b>'+Math.round(mins/60*10)/10+'</b><span>hours trained</span></div><div class="stat"><b>'+(Math.round(km*10)/10)+'</b><span>km logged</span></div></div>';
+  h+='<div class="stats"><div class="stat"><b>'+(done+short)+'</b><span>sessions logged of '+N+'</span></div><div class="stat"><b>'+pct+'</b><span>consistency so far</span></div><div class="stat"><b>'+streak+'</b><span>day streak</span></div><div class="stat"><b>'+Math.round((mins+exs.m)/60*10)/10+'</b><span>hours trained</span></div><div class="stat"><b>'+(Math.round(km*10)/10)+'</b><span>km logged</span></div><div class="stat"><b>'+exs.n+'</b><span>extra sessions</span></div></div>';
   h+='<div class="panel"><h2>'+cfg.weeks+' weeks</h2><div class="grid"><span></span>';
   for(var k0=0;k0<7;k0++) h+='<span class="hd">'+wd(addDays(S(),k0))[0]+'</span>';
   for(var w=0;w<cfg.weeks;w++){
@@ -577,6 +721,7 @@ function viewProgress(){
     }
   }
   h+='</div><div class="legend"><span><i style="background:var(--done)"></i>Done</span><span><i style="background:var(--short)"></i>Shortened</span><span><i style="background:var(--skip)"></i>Skipped</span><span><i style="border:1px solid var(--line)"></i>Not logged</span></div></div>';
+  h+=xProgress(exs);
   var hist={}; Object.keys(state.logs).sort().forEach(function(d){var ex=state.logs[d].ex||{}; Object.keys(ex).forEach(function(id){var v=parseFloat(String(ex[id].w||'').replace(',','.')); if(!isNaN(v)&&NM[id]) (hist[id]=hist[id]||[]).push(v)})});
   var ids=Object.keys(hist);
   h+='<div class="panel"><h2>Lifts</h2>';
@@ -589,7 +734,7 @@ function viewProgress(){
 
 /* ----- Setup: program length, start date, colours ----- */
 function viewSetup(){
-  var h='<div><div class="eyebrow">Make it yours</div><h1 class="title">Setup</h1></div>';
+  var h='<div><div class="eyebrow">Make it yours</div><h1 class="title">Setup</h1></div>'+syncPanel();
   h+='<div class="panel"><h2>Program length</h2><div class="weeks" role="group" aria-label="Program length in weeks">';
   for(var w=2;w<=12;w++) h+='<button data-act="weeks" data-v="'+w+'" aria-pressed="'+(cfg.weeks===w)+'" aria-label="'+w+' weeks">'+w+'</button>';
   h+='</div><p class="sub"><b>'+cfg.weeks+' weeks</b>, '+esc(dLong(S()))+' to '+esc(dLong(E()))+'. Runs, walks and the weekly focus build up across whatever length you pick.</p>'
@@ -631,7 +776,7 @@ var K14=[
  ['Retest + rest','After the warm-up, retest and log against Day 1, then rest the remainder of the day.',[['Max push-ups in one set','Log it'],['Max inverted rows in one set','Log it'],['Two-hand swings in 2 minutes','Log it']]]
 ];
 function k14get(){try{return JSON.parse(localStorage.getItem('k14.v1')||'{}')}catch(e){return {}}}
-function k14set(o){try{localStorage.setItem('k14.v1',JSON.stringify(o))}catch(e){}}
+function k14set(o){o._u=o._u||Date.now(); try{localStorage.setItem('k14.v1',JSON.stringify(o))}catch(e){}}
 function view14(){
   var st=k14get(), n=0; for(var i=0;i<14;i++) if(st[i]) n++;
   var h='<div><div class="eyebrow">Separate from your main program</div><h1 class="title">14-Day Plan</h1></div>'
@@ -642,6 +787,237 @@ function view14(){
      +'<p class="sub">'+esc(d[1])+'</p>'
      +d[2].map(function(e){return '<div class="row"><div class="ex-name">'+esc(e[0])+'</div><div class="sr">'+esc(e[1])+'</div></div>'}).join('')+'</details>';
   });
+  return h+'</div>';
+}
+
+/* ---------- guide (reference, with how-to pictures) ---------- */
+function guideCard(r,work){
+  return '<section class="sess'+(work?' work':'')+'"><header><h2>'+esc(r.name)+'</h2><span class="eyebrow">'+esc(r.dur)+'</span></header>'
+   +(r.ex.length?r.ex.map(function(e){return '<div class="row"><div class="ex-name">'+esc(e.n)+'</div><div class="sr">'+esc(e.sr)+'</div>'+(e.cue?'<div class="cue">'+esc(e.cue)+'</div>':'')+'</div>'}).join(''):'<p class="empty">No exercises yet. Add some in Plan.</p>')+'</section>';
+}
+function daysFor(key){return cfg.week.map(function(k,i){return k===key?wd(addDays(S(),i)):null}).filter(Boolean).join(' · ')}
+function viewGuide(){
+  var g=state.gtab, h='<div><div class="eyebrow">Reference</div><h1 class="title">Gym Guide</h1></div>';
+  h+='<div class="seg" role="group" aria-label="Guide section">'+[['gym','Gym'],['work','At work'],['other','Other'],['quick','Quick'],['yoga','Yoga']].map(function(t){return '<button data-act="gtab" data-v="'+t[0]+'" aria-pressed="'+(g===t[0])+'">'+t[1]+'</button>'}).join('')+'</div>';
+  var keys=Object.keys(cfg.routines);
+  if(g==='gym') h+=keys.map(function(k){return guideCard(cfg.routines[k].gym,false)}).join('')+'<p class="note"><b>'+esc(keys.map(function(k){var d=daysFor(k); return d?d+' '+cfg.routines[k].gym.name:''}).filter(Boolean).join(' · '))+'.</b> Leave 2–3 good reps in reserve on every set. Strength supports the running, so it should not leave you too sore to run.</p>';
+  if(g==='work') h+=keys.filter(function(k){return cfg.routines[k].work&&cfg.routines[k].work.ex.length}).map(function(k){return guideCard(cfg.routines[k].work,true)}).join('')+'<p class="note">Needs one kettlebell, a pull-up bar or sturdy rail, and floor space. Swap the closest exercise if something is missing and keep the sets and reps. Exhausted after a 12.5-hour shift: 20–30 minutes or mobility only.</p>';
+  if(g==='yoga') h+=yogaView();
+  if(g==='quick') h+='<p class="note"><b>Short on time or kit?</b> Pick any one of these. They are not part of the weekly plan, so use them whenever you need a fast session.</p>'+QUICK.map(quickCard).join('');
+  if(g==='other'){
+    ['run','long','walk'].forEach(function(k){var c=cfg.cardio[k], d=daysFor(k); if(!d) return;
+      h+='<section class="sess"><h2>'+esc(d)+' · '+esc(c.name)+'</h2><p class="sub">'+esc(c.tips)+'</p></section>'});
+    var rd=daysFor('rec'); if(rd) h+='<section class="sess"><h2>'+esc(rd)+' · '+esc(cfg.recovery.name)+'</h2><ul class="plain">'+cfg.recovery.items.map(function(r){return '<li>'+esc(r)+'</li>'}).join('')+'</ul></section>';
+    h+='<section class="sess"><h2>Work-swing rules</h2><ul class="plain"><li>On work days the goal is consistency, not personal bests.</li><li>If I am exhausted after a 12.5-hour shift, I will shorten the session to 20–30 minutes or do mobility only.</li><li>Runs during work swings stay easy and conversational.</li><li>Longer runs, longer walks and hills belong mainly on off-work weeks.</li><li>If soreness or fatigue builds, I reduce duration before I reduce consistency.</li></ul></section>';
+  }
+  return h;
+}
+
+/* ---------- quick sessions (20-30 min, little equipment) ---------- */
+var QUICK=[
+ {n:'1. Bodyweight express',d:'20 min',e:'No equipment',i:'3 rounds, rest 60 s between rounds. Steady pace, 2 reps in reserve.',x:[['Squat','15'],['Push-up','10'],['Reverse lunge','8 each leg'],['Glute bridge','15'],['Plank','30 s']]},
+ {n:'2. Kettlebell swing + squat',d:'25 min',e:'One kettlebell (or a loaded backpack)',i:'5 rounds, rest 60 s between rounds.',x:[['Two-hand swing','15'],['Goblet squat','10'],['Push-up','8–10']]},
+ {n:'3. Legs for runners',d:'20 min',e:'No equipment',i:'Build strong legs without leaving you too sore to run.',x:[['Squat','3 × 15'],['Split squat','3 × 10 each leg'],['Single-leg calf raise','3 × 15 each leg'],['Glute bridge','3 × 12'],['Wall sit','2 × 45 s']]},
+ {n:'4. Upper body, no gear',d:'25 min',e:'Sturdy table or chair, a towel',i:'Rest 60 s between sets.',x:[['Push-up','4 × as many as you can minus 2'],['Table or towel door row','4 × 10'],['Pike push-up','3 × 8'],['Chair dip','3 × 10'],['Hollow body hold','3 × 20 s']]},
+ {n:'5. Core + stability',d:'20 min',e:'No equipment',i:'Slow and controlled. Finish with 5 minutes of easy stretching.',x:[['Dead bug','3 × 10 each side'],['Side plank','3 × 30 s each side'],['Bird dog','3 × 10 each side'],['Glute bridge march','3 × 12'],['Hollow body hold','3 × 20 s']]},
+ {n:'6. 20-minute EMOM',d:'20 min',e:'No equipment',i:'Every minute on the minute: do the reps, rest for what is left of the minute. Repeat the 4-minute cycle 5 times.',x:[['Minute 1','12 squats'],['Minute 2','8 push-ups'],['Minute 3','10 reverse lunges'],['Minute 4','30 s plank']]},
+ {n:'7. Backpack strength',d:'30 min',e:'A backpack loaded with 8–10 kg',i:'Also good practice for trek days. Rest 60 s between sets, then finish with a 5-minute walk.',x:[['Backpack squat','4 × 12'],['Backpack lunge','3 × 10 each leg'],['Backpack bent-over row','3 × 10'],['Push-up','3 × as many as you can minus 2'],['Calf raise','3 × 15']]},
+ {n:'8. Low-impact circuit',d:'25 min',e:'No equipment',i:'4 rounds. 40 s work, 20 s rest between moves, 1 minute rest between rounds.',x:[['Squat','40 s'],['Push-up','40 s'],['Mountain climber','40 s'],['Alternating reverse lunge','40 s'],['Plank shoulder tap','40 s']]},
+ {n:'9. Kettlebell full body',d:'30 min',e:'One kettlebell',i:'4 rounds, rest 75 s between rounds.',x:[['Goblet squat','10'],['Overhead press','6 each arm'],['Bent-over row','8 each arm'],['Romanian deadlift','10'],['Suitcase carry or hold','30 s each side']]},
+ {n:'10. Recovery flow',d:'20 min',e:'No equipment',i:'For tired legs or a heavy work day. Move slowly and breathe.',x:[['Easy walk','8–10 min'],['Cat-cow','10'],['World\'s greatest stretch','5 each side'],['Hip flexor stretch','45 s each side'],['Hamstring stretch','45 s each side'],['Calf stretch','45 s each side'],['Figure-4 glute stretch','45 s each side'],['Child\'s pose','60 s']]}
+];
+function quickCard(q){
+  return '<section class="sess"><header><h2>'+esc(q.n)+'</h2><span class="eyebrow">'+esc(q.d)+'</span></header>'
+   +'<p class="sub"><b>Needs:</b> '+esc(q.e)+'. '+esc(q.i)+'</p>'+xBtn(q)
+   +q.x.map(function(e){return '<div class="row"><div class="ex-name">'+esc(e[0])+'</div><div class="sr">'+esc(e[1])+'</div></div>'}).join('')+'</section>';
+}
+
+/* ---------- yoga flows ---------- */
+var YOGA=[
+ {lv:'Beginner',n:'Morning wake-up',d:'12 min',e:'A mat or soft floor',i:'Gentle and slow. One breath is one full in and out. Move only as far as feels comfortable.',x:[['Easy seat','5 breaths'],['Cat-cow','8 slow breaths'],['Child\'s pose','5 breaths'],['Downward-facing dog','5 breaths'],['Low lunge','5 breaths each side'],['Standing forward fold','5 breaths'],['Chair pose','5 breaths'],['Standing forward fold','5 breaths']]},
+ {lv:'Beginner',n:'After a run: legs and hips',d:'15 min',e:'A mat or soft floor',i:'Hold each pose and breathe slowly. Stretch to a mild pull, never pain.',x:[['Standing forward fold','8 breaths'],['Low lunge','8 breaths each side'],['Hamstring stretch','45 s each leg'],['Figure-4 glute stretch','45 s each side'],['Happy baby','8 breaths'],['Supine twist','6 breaths each side'],['Legs up the wall','2 min']]},
+ {lv:'Beginner',n:'Evening wind-down',d:'12 min',e:'A mat or soft floor',i:'Slow, quiet and calming. Good before bed or after a long shift.',x:[['Child\'s pose','8 breaths'],['Cat-cow','8 slow breaths'],['Sphinx pose','6 breaths'],['Bridge pose','5 breaths, 3 times'],['Happy baby','8 breaths'],['Supine twist','6 breaths each side'],['Savasana','3 min']]},
+ {lv:'Intermediate',n:'Strong flow',d:'25 min',e:'A mat',i:'Link movement with breath, one breath per move. Rest in child\'s pose any time.',x:[['Cat-cow','6 slow breaths'],['Downward-facing dog','5 breaths'],['Sun salutation A','4 rounds'],['Low lunge','5 breaths each side'],['Warrior II','5 breaths each side'],['Chair pose','8 breaths'],['Plank pose','5 breaths'],['Cobra pose','5 breaths'],['Downward-facing dog','5 breaths'],['Child\'s pose','5 breaths'],['Supine twist','6 breaths each side'],['Savasana','2 min']]},
+ {lv:'Intermediate',n:'Hips and hamstrings for runners',d:'25 min',e:'A mat, a cushion or block',i:'Longer holds. Use your breath to ease deeper, and back off if you feel any pinching.',x:[['Downward-facing dog','8 breaths'],['Low lunge','10 breaths each side'],['Half splits','8 breaths each side'],['Standing forward fold','8 breaths'],['Pigeon pose','10 breaths each side'],['Hip flexor stretch','45 s each side'],['Bridge pose','5 breaths, 3 times'],['Happy baby','8 breaths'],['Supine twist','8 breaths each side'],['Savasana','2 min']]},
+ {lv:'Intermediate',n:'Core and balance flow',d:'20 min',e:'A mat',i:'Steady and controlled. Balance poses get easier if you pick a point to look at.',x:[['Plank pose','5 breaths'],['Side plank','5 breaths each side'],['Boat pose','5 breaths, 3 times'],['Warrior II','5 breaths each side'],['Warrior III','5 breaths each side'],['Tree pose','8 breaths each side'],['Chair pose','8 breaths'],['Bridge pose','5 breaths, 3 times'],['Child\'s pose','5 breaths'],['Savasana','2 min']]}
+];
+function yogaView(){
+  var h='<p class="note"><b>Yoga flows.</b> Not part of the weekly plan. Use them on recovery days, after a run or on a tired work day. One breath is a full breath in and out, roughly 4 to 6 seconds. Never push into pain. Bend your knees whenever you need to.</p>';
+  ['Beginner','Intermediate'].forEach(function(lv){
+    h+='<h2 class="title" style="font-size:28px;margin:14px 0 4px">'+lv+'</h2>'+YOGA.filter(function(y){return y.lv===lv}).map(quickCard).join('');
+  });
+  return h;
+}
+
+/* ---------- how-to pictures ---------- */
+var HOWSEG={T:26,U:14,F:13,TH:18,SH:18,FT:6};
+function hdir(a){a=a*Math.PI/180;return [Math.cos(a),Math.sin(a)]}
+function hadd(p,a,l){var d=hdir(a);return [p[0]+d[0]*l,p[1]+d[1]*l]}
+function hf(p){
+  var o={}; p.t=p.t==null?-90:p.t; p.ua=p.ua==null?90:p.ua; p.fa=p.fa==null?90:p.fa; p.th=p.th==null?90:p.th; p.sh=p.sh==null?90:p.sh;
+  o.hip=[0,0]; o.sh=hadd(o.hip,p.t,HOWSEG.T); o.head=hadd(o.sh,p.t,11);
+  o.el=hadd(o.sh,p.ua,HOWSEG.U); o.wr=hadd(o.el,p.fa,HOWSEG.F);
+  if(p.ua2!=null){o.el2=hadd(o.sh,p.ua2,HOWSEG.U); o.wr2=hadd(o.el2,p.fa2==null?p.ua2:p.fa2,HOWSEG.F)}
+  o.kn=hadd(o.hip,p.th,HOWSEG.TH); o.an=hadd(o.kn,p.sh,HOWSEG.SH);
+  o.toe=p.ft===null?null:hadd(o.an,p.ft==null?0:p.ft,HOWSEG.FT);
+  if(p.th2!=null){o.kn2=hadd(o.hip,p.th2,HOWSEG.TH); o.an2=hadd(o.kn2,p.sh2==null?p.th2:p.sh2,HOWSEG.SH); o.toe2=p.ft2==null?null:hadd(o.an2,p.ft2,HOWSEG.FT)}
+  return o;
+}
+function hframe(p,ox,idx,mode){
+  var o=hf(p), pts=[o.hip,o.sh,o.head,o.el,o.wr,o.kn,o.an]; ['toe','el2','wr2','kn2','an2','toe2'].forEach(function(k){if(o[k])pts.push(o[k])});
+  var rs=(p.rects||[]); rs.forEach(function(r){pts.push([r[0],r[1]],[r[0]+r[2],r[1]+r[3]])});
+  var minX=1e9,maxX=-1e9,maxY=-1e9; pts.forEach(function(q){if(q[0]<minX)minX=q[0]; if(q[0]>maxX)maxX=q[0]; if(q[1]>maxY)maxY=q[1]});
+  var FLOOR=92, dx=ox+50-(minX+maxX)/2, dy=mode==='wrist'?(40-o.wr[1]):(FLOOR-maxY);
+  function P(q){return (q[0]+dx).toFixed(1)+','+(q[1]+dy).toFixed(1)}
+  function L(a,b,c){return '<polyline class="'+c+'" points="'+P(a)+' '+P(b)+'"/>'}
+  function L3(a,b,c,k){return '<polyline class="'+k+'" points="'+P(a)+' '+P(b)+' '+P(c)+'"/>'}
+  var s='';
+  rs.forEach(function(r){s+='<rect class="hp" x="'+(r[0]+dx).toFixed(1)+'" y="'+(r[1]+dy).toFixed(1)+'" width="'+r[2]+'" height="'+r[3]+'" rx="1.5"/>'});
+  if(o.el2) s+=L3(o.sh,o.el2,o.wr2,'far');
+  if(o.kn2){s+=L3(o.hip,o.kn2,o.an2,'far'); if(o.toe2) s+=L(o.an2,o.toe2,'far')}
+  s+=L(o.hip,o.sh,'bod')+L3(o.hip,o.kn,o.an,'leg'); if(o.toe) s+=L(o.an,o.toe,'leg');
+  s+='<circle class="hd" cx="'+(o.head[0]+dx).toFixed(1)+'" cy="'+(o.head[1]+dy).toFixed(1)+'" r="6"/>';
+  s+=L3(o.sh,o.el,o.wr,'arm');
+  if(p.bar){var by=(o.wr[1]+dy-1).toFixed(1); s+='<line class="hb" x1="'+(o.wr[0]+dx-16).toFixed(1)+'" y1="'+by+'" x2="'+(o.wr[0]+dx+16).toFixed(1)+'" y2="'+by+'"/>'}
+  if(p.kb){s+='<circle class="kb" cx="'+(o.wr[0]+dx).toFixed(1)+'" cy="'+(o.wr[1]+dy+4).toFixed(1)+'" r="5"/>'}
+  if(mode!=='wrist') s+='<line class="fl" x1="'+(ox+4)+'" y1="'+(FLOOR+2)+'" x2="'+(ox+96)+'" y2="'+(FLOOR+2)+'"/>';
+  s+='<text class="fn" x="'+(ox+4)+'" y="12">'+idx+'</text>';
+  return s;
+}
+function hfigure(poses,mode){
+  var n=poses.length, w=n*110-10, s='<svg class="hsv'+(n===1?' one':'')+'" viewBox="0 0 '+w+' 100" role="img" aria-label="Exercise position diagram">';
+  poses.forEach(function(p,i){s+=hframe(JSON.parse(JSON.stringify(p)),i*110,n>1?(i+1):'',mode)});
+  return s+'</svg>';
+}
+var HOW=[
+ {k:'sideplank',re:/side plank/,n:'Side plank',p:[{t:-26,th:154,sh:154,ua:90,fa:80,ua2:-90,fa2:-90,ft:null}],s:['Support yourself on one arm directly under your shoulder, feet stacked. (Drawn as a straight-arm version; the forearm version is easier.)','Lift your hips so your body makes one straight line from head to heels.','Brace your abs, keep the top arm reaching up and breathe steadily.','Do the same time on each side.'],tip:'Do not let the hips sag or roll forward.'},
+ {k:'mtn',re:/mountain climber/,n:'Mountain climber',p:[{t:-26,th:154,sh:154,ua:90,fa:90,ft:null},{t:-26,th:25,sh:150,th2:154,sh2:154,ua:90,fa:90,ft:null}],s:['Start in a high plank, hands under shoulders, body straight.','Drive one knee toward your chest, then switch legs.','Keep your hips level and your shoulders over your hands.','Move quickly but stay controlled.'],tip:'Do not bounce your hips up high.'},
+ {k:'plank',re:/plank/,n:'Plank',p:[{t:-13,th:167,sh:167,ua:90,fa:0,ft:null}],s:['Elbows directly under your shoulders, forearms on the floor.','Body in one straight line from head to heels.','Squeeze your glutes, brace your abs and breathe.','For shoulder taps, hold a high plank and tap each shoulder with the opposite hand without letting your hips rock.'],tip:'Do not let your lower back sag or your hips pike up.'},
+ {k:'pike',re:/pike/,n:'Pike push-up',p:null,s:['Start with hips high and body in an upside-down V, hands and feet on the floor.','Bend your elbows and lower the top of your head toward the floor between your hands.','Press back up to the V.','Walk your feet closer to make it harder, or further away to make it easier.'],tip:'Keep your hips high the whole time.'},
+ {k:'pushup',re:/push-?up/,n:'Push-up',p:[{t:-26,th:154,sh:154,ua:90,fa:90,ft:null},{t:-8,th:172,sh:172,ua:165,fa:15,ft:null}],s:['Hands under your shoulders, body in a straight line from head to heels.','Lower your chest toward the floor with your elbows about 45 degrees from your body.','Press the floor away to return to the top.','Too hard? Put your hands on a bench or chair, or drop to your knees.'],tip:'Do not let your hips sag or your head drop forward.'},
+ {k:'dip',re:/dip/,n:'Chair dip',p:[{t:-90,th:40,sh:40,ua:90,fa:90,ft:null,rects:[[-24,1.5,26,21.6]]},{t:-90,th:23,sh:23,ua:160,fa:80,ft:null,rects:[[-24,-7.5,26,21.6]]}],s:['Sit on the edge of a sturdy chair or bench, hands gripping the edge beside your hips.','Slide your hips off the front and straighten your legs (bend your knees to make it easier).','Bend your elbows to about 90 degrees, keeping your back close to the chair.','Press back up until your arms are straight.'],tip:'Only use a chair that will not slide or tip.'},
+ {k:'ohp',re:/overhead press/,n:'Overhead press',p:[{ua:90,fa:-90,kb:1},{ua:-90,fa:-90,kb:1}],s:['Hold the weight at your shoulder, glutes tight, ribs down.','Press straight up until your arm is by your ear.','Lower under control back to the shoulder.','Do not lean back as you press.'],tip:'Keep your ribs down and do not arch your lower back.'},
+ {k:'presslying',re:/floor press|bench press|incline|press/,n:'Lying press',p:[{t:180,th:-60,sh:60,ua:-90,fa:-90,kb:1},{t:180,th:-60,sh:60,ua:10,fa:-90,kb:1}],s:['Lie on your back with your feet planted and the weights over your chest.','Lower with your elbows about 45 degrees from your body until they touch the floor or reach chest level.','Press the weights back up over your chest.','For the incline press, set the bench to about 30 to 45 degrees.'],tip:'Keep your shoulder blades pinched and your wrists straight.'},
+ {k:'swing',re:/swing/,n:'Kettlebell swing',p:[{t:-35,th:70,sh:105,ua:115,fa:115,kb:1},{ua:0,fa:0,kb:1}],s:['Stand with feet a little wider than your shoulders and hike the bell back between your legs, hips pushed back.','Snap your hips forward. The bell floats up to chest height.','Your arms are just hooks. The power comes from your hips.','Let the bell fall back and hinge again.'],tip:'It is a hip hinge, not a squat, and not an arm lift.'},
+ {k:'slrdl',re:/single-leg (kb )?romanian|single-leg rdl/,n:'Single-leg Romanian deadlift',p:[{kb:1},{t:-5,th:90,sh:90,th2:185,sh2:185,ua:90,fa:90,kb:1}],s:['Stand on one leg with a soft knee, bell in the opposite hand.','Hinge at the hip while your other leg reaches straight back.','Keep your hips square and your back flat until your body is nearly level.','Stand tall by driving your hips forward.'],tip:'Do not twist your hips open.'},
+ {k:'hinge',re:/romanian|deadlift/,n:'Hip hinge / deadlift',p:[{kb:1},{t:-22,th:78,sh:96,kb:1}],s:['Feet hip-width, soft knees, weight in your hands in front of your thighs.','Push your hips back as if closing a car door, keeping your back flat.','Lower until you feel a strong stretch in your hamstrings, with the weight sliding close to your legs.','Stand by driving your hips forward and squeezing your glutes.'],tip:'Keep your back flat and the weight close to your legs.'},
+ {k:'downdog',re:/downward/,n:'Downward-facing dog',p:null,s:['Start on hands and knees, tuck your toes and lift your hips up and back.','Press the floor away, spread your fingers and let your head hang between your arms.','Bend your knees as much as you need to keep your back long.','Pedal your heels gently if your calves are tight.'],tip:'Do not round your back to straighten your legs. Bend your knees instead.'},
+ {k:'lowlunge',re:/low lunge|crescent/,n:'Low lunge',p:null,s:['From downward dog step one foot between your hands. Lower your back knee to the floor.','Stack your front knee over your ankle.','Lift your torso and reach your arms up, or rest your hands on your front thigh.','Gently sink your hips forward and down. Swap sides.'],tip:'Do not let your front knee go past your toes.'},
+ {k:'warrior3',re:/warrior (iii|3)/,n:'Warrior III',p:null,s:['Stand on one leg with a soft knee.','Hinge forward and lift the other leg straight back until your body is a flat line.','Keep your hips level and your arms by your sides, in front, or at your chest.','Hold, then step back and swap legs.'],tip:'Do not twist your hips open. Keep them square to the floor.'},
+ {k:'warrior2',re:/warrior (ii|2)\b/,n:'Warrior II',p:null,s:['Stand with your feet wide, front foot forward and back foot turned slightly in.','Bend your front knee to about 90 degrees over your ankle.','Open your hips and chest to the side, arms reaching long at shoulder height.','Look over your front hand. Swap sides.'],tip:'Do not let your front knee cave inward.'},
+ {k:'cobra',re:/cobra|sphinx/,n:'Cobra or sphinx',p:null,s:['Lie on your belly with your hands under your shoulders (or forearms down for sphinx).','Press gently into your hands and lift your chest, keeping your hips on the floor.','Draw your shoulders back and away from your ears.','Lower down slowly.'],tip:'Do not push up so high that your lower back pinches.'},
+ {k:'fold',re:/forward fold/,n:'Standing forward fold',p:null,s:['Stand with feet hip-width apart and hinge forward from your hips.','Bend your knees as much as you need.','Let your head and arms hang, or hold opposite elbows.','Roll up slowly when you finish.'],tip:'Do not lock your knees or hold your breath.'},
+ {k:'pigeon',re:/pigeon/,n:'Pigeon pose',p:null,s:['From hands and knees slide one knee forward behind your wrist and extend the other leg back.','Lower your hips toward the floor, using a cushion under your hip if needed.','Fold forward over your front leg if comfortable.','Hold, then swap sides. Use figure-4 on your back if this bothers your knee.'],tip:'Stop if you feel pain in your knee. Put a cushion under your hip.'},
+ {k:'chair',re:/chair pose/,n:'Chair pose',p:null,s:['Stand with feet together or hip-width apart.','Bend your knees and sit your hips back as if sitting into a chair.','Reach your arms up beside your ears, ribs drawn in.','Hold, breathing steadily.'],tip:'Keep your weight in your heels and do not arch your lower back.'},
+ {k:'tree',re:/tree pose/,n:'Tree pose',p:null,s:['Stand tall and shift your weight onto one foot.','Place the other foot on your calf or inner thigh, never on the knee.','Bring your hands together at your chest or reach up.','Fix your eyes on one spot. Swap sides.'],tip:'Do not press your foot into your knee.'},
+ {k:'happybaby',re:/happy baby/,n:'Happy baby',p:null,s:['Lie on your back and bring your knees toward your armpits.','Hold the outsides of your feet or your shins.','Gently draw your knees wide and down, keeping your tailbone on the floor.','Rock slowly side to side if it feels good.'],tip:'Keep your head and neck relaxed.'},
+ {k:'suptwist',re:/supine twist|reclined twist/,n:'Supine twist',p:null,s:['Lie on your back and draw your knees to your chest.','Let both knees fall to one side while your shoulders stay on the floor.','Turn your head the other way if comfortable, arms open wide.','Hold, then swap sides.'],tip:'Do not force your knees to the floor.'},
+ {k:'bridgepose',re:/bridge pose/,n:'Bridge pose',p:[{t:180,th:-60,sh:60,ua:0,fa:0},{t:155,th:-25,sh:80,ua:0,fa:0}],s:['Lie on your back, knees bent, feet flat and hip-width apart.','Press through your feet and lift your hips.','Keep your thighs parallel and your neck relaxed.','Lower down one vertebra at a time.'],tip:'Do not let your knees fall outward.'},
+ {k:'boat',re:/boat pose/,n:'Boat pose',p:null,s:['Sit with knees bent and feet on the floor, leaning back slightly.','Lift your feet so your shins are parallel to the floor.','Reach your arms forward and keep your chest tall.','Straighten your legs only if your back stays long.'],tip:'Do not round your lower back. Bend your knees instead.'},
+ {k:'halfsplit',re:/half split/,n:'Half splits',p:null,s:['From a low lunge shift your hips back over your back knee.','Straighten your front leg, toes pulling up toward you.','Fold forward over your front leg with a long spine, hands on the floor or blocks.','Hold, then swap legs.'],tip:'Do not round your back to reach the floor.'},
+ {k:'sunsal',re:/sun salutation/,n:'Sun salutation A',p:null,s:['Stand tall, breathe in and reach your arms up.','Breathe out and fold forward. Breathe in and lift halfway with a flat back.','Breathe out and step or float back to plank, then lower halfway (or knees down).','Breathe in to cobra, breathe out to downward dog and hold for 5 breaths.','Step forward, lift halfway, fold, then rise up with your arms overhead.'],tip:'Move one breath per movement and bend your knees whenever you need.'},
+ {k:'easyseat',re:/easy seat/,n:'Easy seat',p:null,s:['Sit cross-legged with your hips higher than your knees. Sit on a cushion or folded blanket if needed.','Rest your hands on your knees and lengthen your spine.','Close your eyes and breathe slowly through your nose.','Let your shoulders and jaw relax.'],tip:'Sit on a cushion if your knees are above your hips.'},
+ {k:'savasana',re:/savasana|legs up the wall/,n:'Final rest',p:null,s:['Lie on your back with your arms by your sides, palms up, feet falling open. (For legs up the wall, rest your legs up a wall with your hips close to it.)','Let your whole body go heavy.','Breathe naturally and relax your face.','Stay for the full time. Roll to your side before sitting up.'],tip:'Do not skip this part. It lets your body recover.'},
+ {k:'bulgarian',re:/bulgarian/,n:'Bulgarian split squat',p:[{t:-90},{th:10,sh:100,th2:105,sh2:200,ft2:null,rects:[[-34,12.5,22,8.3]]}],s:['Stand a long stride in front of a bench and rest the top of your back foot on it.','Lower straight down until your front thigh is about parallel to the floor.','Keep your front knee over your ankle and your chest tall.','Drive through your front heel to stand. Finish all reps, then swap legs.'],tip:'Do not let the front knee cave inward.'},
+ {k:'lunge',re:/lunge|split squat/,n:'Lunge',p:[{t:-90},{th:5,sh:95,th2:95,sh2:178,ft2:null}],s:['Take a long step (forward or back) and lower until both knees are about 90 degrees.','Keep your torso tall and your front knee over your ankle.','Push through the front heel to return to standing.','Alternate legs, or finish all reps on one side first.'],tip:'Do not let your front knee cave in or your torso lean forward.'},
+ {k:'goblet',re:/goblet|front squat/,n:'Goblet squat',p:[{ua:75,fa:-35,kb:1},{t:-65,th:12,sh:108,ua:75,fa:-35,kb:1}],s:['Hold the bell at your chest with your elbows tucked in.','Sit your hips back and down between your knees, chest tall.','Go as deep as you can with heels down and a flat back.','Drive up through the whole foot.'],tip:'Do not let your knees cave in or your heels lift.'},
+ {k:'jump',re:/jump squat/,n:'Jump squat',p:null,s:['Set up like a normal squat, feet shoulder-width.','Lower into a quarter or half squat and swing your arms back.','Jump straight up, then land softly with bent knees.','Reset between reps if your form slips.'],tip:'Land quietly. If your knees complain, do plain squats.'},
+ {k:'squat',re:/squat/,n:'Squat',p:[{ua:0,fa:0},{t:-62,th:12,sh:108,ua:0,fa:0}],s:['Feet shoulder-width apart, toes turned slightly out.','Sit your hips back and down, chest tall, knees tracking over your toes.','Go as low as you can with heels down and a flat back.','Drive up through the whole foot.'],tip:'Do not let your knees cave in or your heels lift.'},
+ {k:'wallsit',re:/wall sit/,n:'Wall sit',p:[{t:-90,th:0,sh:90,ua:90,fa:10,rects:[[-6,-42,5,60]]}],s:['Lean your back flat against a wall and slide down.','Stop when your thighs are parallel to the floor and your knees are over your ankles.','Rest your hands on your thighs, not on your knees.','Hold, breathing steadily.'],tip:'Do not push on your knees with your hands.'},
+ {k:'bridge1',re:/single-leg glute bridge/,n:'Single-leg glute bridge',p:[{t:180,th:-60,sh:60,ua:0,fa:0},{t:155,th:-25,sh:80,th2:-25,sh2:-25,ua:0,fa:0}],s:['Lie on your back, one foot flat on the floor, the other leg straight.','Drive through your heel to lift your hips until your body is a straight line.','Keep your hips level, do not let one side drop.','Lower slowly and repeat, then swap legs.'],tip:'Do not arch your lower back at the top.'},
+ {k:'bridge',re:/glute bridge|hip thrust/,n:'Glute bridge',p:[{t:180,th:-60,sh:60,ua:0,fa:0},{t:155,th:-25,sh:80,ua:0,fa:0}],s:['Lie on your back, knees bent, feet flat near your hips.','Drive through your heels to lift your hips until shoulders, hips and knees line up.','Squeeze your glutes at the top, then lower slowly.','For a hip thrust, rest your upper back on a bench and do the same lift.'],tip:'Do not arch your lower back at the top. Finish with your glutes.'},
+ {k:'calf',re:/calf raise/,n:'Calf raise',p:[{ft:0},{ft:75}],s:['Stand tall, feet hip-width apart, with a wall or rail to steady you.','Rise as high as you can onto your toes and pause for a second.','Lower slowly all the way down.','For the single-leg version, hold one foot off the floor.'],tip:'Go slow on the way down.'},
+ {k:'rowinv',re:/inverted row|table or towel|towel door|table row/,n:'Inverted row',p:[{t:-12,th:168,sh:168,ua:-90,fa:-90,ft:null,bar:1},{t:-40,th:140,sh:140,ua:120,fa:-60,ft:null,bar:1}],s:['Lie under a very sturdy table or bar and hold the edge, heels on the floor, body straight.','Pull your chest up to the edge, squeezing your shoulder blades together.','Lower slowly until your arms are straight.','Towel version: loop a towel around a closed door handle on the hinge side, lean back and pull.'],tip:'Only use something that will not move, and keep your body straight.'},
+ {k:'pullup',re:/pull-?up|chin-?up|pulldown/,n:'Pull-up',p:[{t:-90,ua:-90,fa:-90,bar:1},{ua:95,fa:-80,bar:1}],mode:'wrist',s:['Hang from the bar with your shoulders pulled down away from your ears.','Pull your elbows down toward your ribs until your chin is over the bar.','Lower all the way to a straight-arm hang.','For a lat pulldown, sit and pull the bar to your upper chest in the same way.'],tip:'Do not swing, and do not shrug your shoulders up.'},
+ {k:'row',re:/row/,n:'Bent-over row',p:[{t:-28,th:78,sh:96,kb:1},{t:-28,th:78,sh:96,ua:-160,fa:90,kb:1}],s:['Hinge forward with a flat back, knees soft, arm hanging with the weight.','Pull your elbow back toward your hip and squeeze your shoulder blade.','Pause, then lower slowly.','For one-arm rows, rest your free hand on a bench or your thigh.'],tip:'Keep your back flat and do not twist your torso.'},
+ {k:'carry',re:/carry|carries|suitcase|farmer|loaded/,n:'Carry',p:[{th:75,sh:95,th2:105,sh2:85,kb:1},{th:105,sh:85,th2:75,sh2:95,kb:1}],s:['Pick the weight up with a flat back, then stand tall with shoulders back.','Walk with short, steady steps and do not lean toward the weight.','Keep your ribs down and your grip firm.','Suitcase carry: one weight, one side. Farmer carry: a weight in each hand.'],tip:'Stay tall and do not let the weight pull you sideways.'},
+ {k:'deadbug',re:/dead bug/,n:'Dead bug',p:[{t:180,ua:-90,fa:-90,th:-90,sh:0,ft:null},{t:180,ua:-90,fa:-90,ua2:178,fa2:178,th:-90,sh:0,th2:2,sh2:2,ft:null}],s:['Lie on your back, arms straight up, knees bent at 90 degrees over your hips.','Press your lower back into the floor.','Slowly lower the opposite arm and leg toward the floor.','Return and switch sides. Breathe out as you lower.'],tip:'If your back arches, do not lower as far.'},
+ {k:'birddog',re:/bird dog/,n:'Bird dog',p:[{t:-20,th:90,sh:180,ft:null},{t:-20,th:90,sh:180,ua2:-15,fa2:-15,th2:190,sh2:190,ft:null}],s:['Start on hands and knees, hands under shoulders and knees under hips.','Reach one arm forward and the opposite leg back until both are level with your body.','Keep your hips level and your back flat.','Return and switch sides.'],tip:'Do not twist your hips or arch your back.'},
+ {k:'hollow',re:/hollow/,n:'Hollow body hold',p:[{t:190,ua:185,fa:185,th:-12,sh:-12,ft:null}],s:['Lie on your back, press your lower back into the floor.','Lift your shoulders and straight legs off the floor, arms by your ears.','Hold the shape and keep breathing.','If your lower back arches, raise your legs higher or bend your knees.'],tip:'Lower back stays flat on the floor.'},
+ {k:'russian',re:/russian twist/,n:'Russian twist',p:null,s:['Sit with knees bent, lean back slightly with a straight back and lift your feet if you can.','Hold the bell at your chest.','Rotate your upper body to tap the bell beside one hip, then the other.','Keep your chest tall and move slowly.'],tip:'Turn from your ribs, not just your arms.'},
+ {k:'halo',re:/halo/,n:'Kettlebell halo',p:null,s:['Stand tall holding the bell upside down by the horns at chest height.','Circle the bell around your head, keeping it close to your head.','Keep your ribs down and do not lean back.','Do half the reps in each direction.'],tip:'Keep your core tight and your head still.'},
+ {k:'catcow',re:/cat-cow/,n:'Cat-cow',p:null,s:['Start on hands and knees.','Breathe in, drop your belly and look up.','Breathe out, round your back toward the ceiling and tuck your chin.','Move slowly with your breathing.'],tip:'Move through a pain-free range.'},
+ {k:'wgs',re:/world's greatest/,n:"World's greatest stretch",p:null,s:['From a push-up position step one foot outside your hand.','Drop your back hip toward the floor and sink into the stretch.','Rotate your chest toward the front leg and reach that arm to the ceiling.','Return and repeat on the other side.'],tip:'Go only as far as feels like a stretch, not pain.'},
+ {k:'hipflex',re:/hip flexor stretch/,n:'Hip flexor stretch',p:null,s:['Kneel on one knee with the other foot in front, a cushion under your knee.','Tuck your tailbone under and gently shift your hips forward.','Feel the stretch in the front of the back leg hip.','Hold, then swap sides.'],tip:'Do not arch your lower back.'},
+ {k:'hamstring',re:/hamstring stretch/,n:'Hamstring stretch',p:null,s:['Sit or stand with one heel forward, toes up and that leg straight.','Hinge forward from your hips with a flat back.','Stop when you feel a gentle stretch behind the thigh.','Hold, then swap legs.'],tip:'Do not round your back or bounce.'},
+ {k:'calfstr',re:/calf stretch/,n:'Calf stretch',p:null,s:['Stand facing a wall, one foot back with the heel flat on the floor.','Lean forward with the back leg straight until you feel the stretch.','Hold, then bend that knee slightly to reach the lower calf.','Swap legs.'],tip:'Keep your back heel down.'},
+ {k:'fig4',re:/figure-4/,n:'Figure-4 glute stretch',p:null,s:['Lie on your back with knees bent, feet flat.','Cross one ankle over the opposite knee.','Pull the lower thigh toward your chest until you feel the stretch in your buttock.','Hold, then swap sides.'],tip:'Keep your head and shoulders relaxed on the floor.'},
+ {k:'child',re:/child's pose/,n:"Child's pose",p:null,s:['Kneel and sit your hips back toward your heels.','Reach your arms forward and rest your forehead on the floor.','Breathe slowly into your back.','Hold and relax.'],tip:'If your knees hurt, put a cushion behind them.'}
+];
+function howFor(name){
+  var n=String(name).toLowerCase();
+  for(var i=0;i<HOW.length;i++) if(HOW[i].re.test(n)) return HOW[i];
+  return null;
+}
+function howPanel(h,name){
+  var q=encodeURIComponent('how to '+String(name).replace(/\(.*?\)/g,'').trim()+' exercise form');
+  return '<div class="how">'+(h.p?hfigure(h.p,h.mode):'<p class="sub">Picture not available for this one. Follow the steps below.</p>')
+   +'<ol>'+h.s.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>'
+   +'<p class="tip"><b>Avoid:</b> '+esc(h.tip)+'</p>'
+   +'<a class="vid" href="https://www.youtube.com/results?search_query='+q+'" target="_blank" rel="noopener">Watch a video</a></div>';
+}
+function addHow(){
+  var els=document.querySelectorAll('#app .ex-name');
+  for(var i=0;i<els.length;i++){
+    var el=els[i]; if(el.querySelector('.howbtn')) continue;
+    var h=howFor(el.textContent); if(!h) continue;
+    var b=document.createElement('button'); b.className='howbtn'; b.type='button'; b.setAttribute('data-act','how'); b.setAttribute('data-k',h.k); b.setAttribute('aria-expanded','false'); b.textContent='How to';
+    el.appendChild(document.createTextNode(' ')); el.appendChild(b);
+  }
+}
+function toggleHow(b){
+  var box=b.closest('.ex,.row'); if(!box) return;
+  var nx=box.nextElementSibling;
+  if(nx&&nx.classList.contains('how')){nx.remove(); b.setAttribute('aria-expanded','false'); return}
+  var h=null; for(var i=0;i<HOW.length;i++) if(HOW[i].k===b.getAttribute('data-k')) h=HOW[i];
+  if(!h) return;
+  var name=b.parentNode.textContent.replace(/\s*How to\s*$/,'');
+  var d=document.createElement('div'); d.innerHTML=howPanel(h,name); var panel=d.firstChild; panel.style.gridColumn='1 / -1';
+  box.parentNode.insertBefore(panel,box.nextSibling); b.setAttribute('aria-expanded','true');
+}
+
+/* ---------- music link (synced with your plan) ---------- */
+function spotGet(){ if(cfg.music) return cfg.music; try{return localStorage.getItem('gymspot.v1')||''}catch(e){return ''} }
+function spotSet(v){ cfg.music=v||''; try{localStorage.removeItem('gymspot.v1')}catch(e){} saveCfg() }
+function musicBar(){
+  var u=spotGet();
+  if(state.musicEdit){
+    return '<div class="musicedit"><label for="m-url">Paste a Spotify playlist link</label><input id="m-url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="https://open.spotify.com/playlist/..." value="'+esc(u)+'">'
+      +'<div class="btnrow"><button class="btnp" data-act="musicsave">Save</button>'+(u?'<button class="btnp" data-act="musicclear">Remove</button>':'')+'<button class="btnp" data-act="musiccancel">Cancel</button></div>'
+      +'<p class="sub" id="m-msg" role="status">'+esc(state.musicMsg||'In Spotify, open a playlist, tap the three dots, Share, then Copy link.')+'</p></div>';
+  }
+  return '<div class="musicrow"><a class="musicbtn" href="'+esc(u||'https://open.spotify.com/')+'" target="_blank" rel="noopener">♪ '+(u?'Open my playlist':'Open Spotify')+'</a><button class="linkbtn" data-act="musicedit">'+(u?'Change playlist':'Set playlist')+'</button></div>';
+}
+
+/* ---------- extra sessions (yoga, quick, 14-day) logged to the tracker ---------- */
+function xList(date){return (L(date).x)||[]}
+function xHas(date,k){return xList(date).some(function(e){return e.k===k})}
+function xSet(date,k,info){
+  var l=W(date), a=l.x||[], i=-1; a.forEach(function(e,n){if(e.k===k) i=n});
+  if(info){ if(i<0) a.push(info) } else if(i>-1) a.splice(i,1);
+  if(a.length) l.x=a; else delete l.x;
+  touch(date);
+}
+function xBtn(q){
+  var k=(q.lv?'y:':'q:')+q.n, on=xHas(TODAY,k);
+  return '<button class="btnp xdone" data-act="xdone" data-k="'+esc(k)+'" data-n="'+esc(q.n)+'" data-c="'+(q.lv?'Yoga':'Quick')+'" data-m="'+(parseInt(q.d,10)||0)+'" aria-pressed="'+on+'">'+(on?'✓ Done today':'Mark done today')+'</button>';
+}
+function xAll(){
+  var r={n:0,m:0,by:{},list:[]};
+  Object.keys(state.logs).forEach(function(d){ xList(d).forEach(function(e){ r.n++; r.m+=e.m||0; r.by[e.c]=(r.by[e.c]||0)+1; r.list.push({d:d,e:e}) }) });
+  r.list.sort(function(a,b){return a.d<b.d?1:a.d>b.d?-1:0});
+  return r;
+}
+function xToday(date){
+  var a=xList(date); if(!a.length) return '';
+  return '<div class="panel"><h2>Extra sessions logged</h2>'+a.map(function(e){
+    return '<div class="lift"><span>'+esc(e.c)+' · '+esc(e.n)+(e.m?' · '+e.m+' min':'')+'</span><button class="linkbtn" data-act="xrm" data-k="'+esc(e.k)+'" data-d="'+date+'">Remove</button></div>'}).join('')+'</div>';
+}
+function xProgress(x){
+  var h='<div class="panel"><h2>Extra sessions</h2>';
+  if(!x.n) return h+'<p class="empty">Tap "Mark done today" on a yoga flow, quick session or 14-day plan day and it shows up here.</p></div>';
+  h+='<div class="lift"><span>Total</span><b>'+x.n+'</b></div>'+Object.keys(x.by).sort().map(function(c){return '<div class="lift"><span>'+esc(c)+'</span><b>'+x.by[c]+'</b></div>'}).join('');
+  h+='<h3 style="margin:10px 0 2px;font-size:14px;color:var(--muted)">Most recent</h3>'+x.list.slice(0,8).map(function(o){return '<div class="lift"><span>'+esc(dShort(o.d))+' · '+esc(o.e.n)+'</span><b>'+esc(o.e.c)+'</b></div>'}).join('');
   return h+'</div>';
 }
 
@@ -692,21 +1068,22 @@ function importFile(f){
 }
 
 /* ---------- render + events ---------- */
-var TABS=[['today','Today'],['week','Week'],['plan','Plan'],['progress','Stats'],['k14','14-Day'],['setup','Setup']];
+var TABS=[['today','Today'],['week','Week'],['guide','Guide'],['plan','Plan'],['progress','Stats'],['k14','14-Day'],['setup','Setup']];
 var TAB_IDS=TABS.map(function(t){return t[0]});
 function render(){
   var app=document.getElementById('app'), t=state.tab, sel=state.sel;
-  var body=t==='week'?viewWeek():t==='plan'?viewPlan():t==='progress'?viewProgress():t==='k14'?view14():t==='setup'?viewSetup():viewToday();
+  var body=t==='week'?viewWeek():t==='guide'?viewGuide():t==='plan'?viewPlan():t==='progress'?viewProgress():t==='k14'?view14():t==='setup'?viewSetup():viewToday();
   var p=plan(sel), workMode=t==='today'&&p.weights&&modeOf(p,L(sel))==='work';
   app.className='app'+(workMode||(t==='plan'&&state.edit&&state.edit.side==='work')?' is-work':'');
-  app.innerHTML='<div class="topbar"><span class="brand">'+esc(cfg.name||'Gym Tracker')+'</span><span class="sync" id="sync" role="status"></span></div>'+body;
+  app.innerHTML='<div class="topbar"><span class="brand">'+esc(cfg.name||'Gym Tracker')+'</span><span class="sync" id="sync" role="status"></span></div>'+(t==='setup'||t==='plan'?'':musicBar())+body;
+  addHow();
   document.getElementById('tabs').innerHTML=TABS.map(function(x){return '<a href="#'+x[0]+'"'+(x[0]===t?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('');
   setSync();
 }
 var toastT=null;
 function toast(msg){var el=document.getElementById('toast'); el.textContent=msg; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){el.hidden=true},2200)}
 function go(tab){ if(location.hash==='#'+tab){state.tab=tab;render()} else location.hash=tab }
-function route(){var h=location.hash.slice(1); if(h==='guide') h='plan'; state.tab=TAB_IDS.indexOf(h)>-1?h:'today'; render(); window.scrollTo(0,0)}
+function route(){var h=location.hash.slice(1); state.tab=TAB_IDS.indexOf(h)>-1?h:'today'; render(); window.scrollTo(0,0)}
 function newId(){return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function newKey(){var abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ'; for(var i=0;i<abc.length;i++) if(!cfg.routines[abc[i]]) return abc[i]; return 'R'+Date.now().toString(36).toUpperCase()}
 function lines(id){return document.getElementById(id).value.split('\n').map(function(s){return s.trim()}).filter(Boolean)}
@@ -722,6 +1099,14 @@ app.addEventListener('click',function(ev){
   else if(a==='wk'){state.sel=clamp(addDays(date,7*(+b.dataset.d))); render()}
   else if(a==='open'){state.sel=b.dataset.d; go('today')}
   else if(a==='ptab'){state.ptab=b.dataset.v; render()}
+  else if(a==='gtab'){state.gtab=b.dataset.v; render()}
+  else if(a==='how'){toggleHow(b)}
+  else if(a==='xdone'){var xk=b.dataset.k; if(xHas(TODAY,xk)) xSet(TODAY,xk,null); else xSet(TODAY,xk,{k:xk,n:b.dataset.n,c:b.dataset.c,m:+b.dataset.m||0}); render()}
+  else if(a==='xrm'){xSet(b.dataset.d,b.dataset.k,null); render()}
+  else if(a==='musicedit'){state.musicEdit=true; state.musicMsg=''; render()}
+  else if(a==='musiccancel'){state.musicEdit=false; render()}
+  else if(a==='musicclear'){spotSet(''); state.musicEdit=false; render()}
+  else if(a==='musicsave'){var mv=(document.getElementById('m-url').value||'').trim(); if(!mv){spotSet(''); state.musicEdit=false; render(); return} if(!/^(https:\/\/open\.spotify\.com\/|https:\/\/spotify\.link\/|spotify:)/.test(mv)){state.musicMsg='That does not look like a Spotify link. It should start with https://open.spotify.com/'; var mm=document.getElementById('m-msg'); if(mm) mm.textContent=state.musicMsg; return} spotSet(mv); state.musicEdit=false; render()}
   /* routine editor */
   else if(a==='edit'){var r=cfg.routines[b.dataset.k], side=b.dataset.s, src=r[side]||{name:r.gym.name+' (at work)',dur:'30–45 min',ex:[]};
     state.edit={key:b.dataset.k,side:side,draft:clone(src)}; render(); window.scrollTo(0,0)}
@@ -748,12 +1133,17 @@ app.addEventListener('click',function(ev){
   else if(a==='preset'){var pr=PRESETS[b.dataset.v]; cfg.preset=b.dataset.v; cfg.theme=pr.t?clone(pr.t):null; saveCfg(); applyTheme(); render()}
   else if(a==='tmode'){cfg.mode=b.dataset.v; saveCfg(); applyTheme(); render()}
   else if(a==='check-update'){checkUpdate(true)}
+  else if(a==='sb-up') sbSignUp();
+  else if(a==='sb-sync') pull();
+  else if(a==='sb-out'){SB.auth.signOut().then(function(){toast('Signed out. Your log stays on this device.')})}
+  else if(a==='go-setup') go('setup');
+  else if(a==='hint-off'){try{localStorage.setItem('gt-sync-hint','off')}catch(x){} render()}
   /* backup + 14-day */
   else if(a==='expcsv') exportCsv();
   else if(a==='expjson') exportJson();
   else if(a==='cpbk') copyBackup();
   else if(a==='imp') document.getElementById('impfile').click();
-  else if(a==='k14'){ev.preventDefault(); var o=k14get(), ki=b.dataset.i; if(o[ki]) delete o[ki]; else o[ki]=1; k14set(o); b.textContent=o[ki]?'Done':'Mark done'; b.style.opacity=o[ki]?'':'.7'; b.setAttribute('aria-pressed',!!o[ki]); var c=0; for(var q=0;q<14;q++) if(o[q]) c++; var nn=document.getElementById('k14n'); if(nn) nn.textContent=c+' of 14 days done.'}
+  else if(a==='k14'){ev.preventDefault(); var o=k14get(), ki=b.dataset.i, kx='k:'+ki; o.dt=o.dt||{}; if(o[ki]){delete o[ki]; xSet(o.dt[ki]||TODAY,kx,null); delete o.dt[ki]} else {o[ki]=1; o.dt[ki]=TODAY; xSet(TODAY,kx,{k:kx,n:'14-Day plan, day '+(+ki+1)+': '+K14[ki][0],c:'14-Day',m:0})} o._u=Date.now(); k14set(o); if(sbOn()) saveCfg(); b.textContent=o[ki]?'Done':'Mark done'; b.style.opacity=o[ki]?'':'.7'; b.setAttribute('aria-pressed',!!o[ki]); var c=0; for(var q=0;q<14;q++) if(o[q]) c++; var nn=document.getElementById('k14n'); if(nn) nn.textContent=c+' of 14 days done.'}
 });
 app.addEventListener('input',function(ev){
   var el=ev.target, ds=el.dataset||{};
@@ -775,6 +1165,10 @@ app.addEventListener('change',function(ev){
   else if(el.id==='set-start'&&/^\d{4}-\d{2}-\d{2}$/.test(el.value)){cfg.start=el.value; saveCfg(); state.sel=clamp(state.sel); render(); toast('Start date changed')}
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
   else if(el.dataset&&el.dataset.color) render();
+});
+app.addEventListener('submit',function(ev){
+  if(ev.target&&ev.target.id==='sb-form'){ev.preventDefault(); sbSignIn()}
+  if(ev.target&&ev.target.id==='pw-form'){ev.preventDefault(); sbChangePw()}
 });
 window.addEventListener('hashchange',route);
 
@@ -805,7 +1199,7 @@ try{
   }
 }catch(e){}
 
-applyTheme(); route(); startDb();
+applyTheme(); startSync(); route(); startDb();
 })();
 </script>
 <!--/page-->
