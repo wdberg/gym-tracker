@@ -198,7 +198,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.1.0';
+var APP_VERSION='2.1.1';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -476,23 +476,36 @@ function syncPanel(){
     +'<p class="sub" id="sb-msg" role="status"></p></div>';
 }
 function sbMsg(t){var m=document.getElementById('sb-msg'); if(m) m.textContent=t}
+function sbBusy(on){var f=document.getElementById('sb-form'); if(f) Array.prototype.forEach.call(f.querySelectorAll('button'),function(b){b.disabled=on})}
+function sbErr(e){var c=e&&e.code||'', m=e&&e.message||'';
+  if(c==='invalid_credentials'||m==='Invalid login credentials') return 'That email and password do not match. Check for typos, or try the other email address you might have used.';
+  if(c==='email_not_confirmed'||/not confirmed/i.test(m)) return 'This account is not confirmed yet. Tap the link in the confirmation email first, then sign in here.';
+  if(c==='over_email_send_rate_limit'||c==='over_request_rate_limit'||e.status===429) return 'Too many tries in a short time. Wait a minute, then try again.';
+  if(c==='user_already_exists'||/already registered/i.test(m)) return 'An account with this email already exists. Use Sign in instead.';
+  if(c==='weak_password') return 'Choose a longer password (at least 6 characters).';
+  return m||'Something went wrong. Try again.';
+}
 function sbCreds(){var e=document.getElementById('sb-email'), p=document.getElementById('sb-pass'); return {email:(e&&e.value||'').trim(),password:p&&p.value||''}}
 function sbSignIn(){
   var c=sbCreds(); if(!c.email||!c.password){sbMsg('Enter your email and password.'); return}
   sbMsg('Signing in…');
+  sbBusy(true);
   SB.auth.signInWithPassword(c).then(function(r){
-    if(r.error) sbMsg(r.error.message==='Invalid login credentials'?'That email and password do not match. Check them and try again.':r.error.message);
+    sbBusy(false);
+    if(r.error) sbMsg(sbErr(r.error));
     else toast('Signed in. Syncing your log.');
-  },function(){sbMsg('Could not reach the sync server. Check your connection and try again.')});
+  },function(){sbBusy(false); sbMsg('Could not reach the sync server. Check your connection and try again.')});
 }
 function sbSignUp(){
   var c=sbCreds(); if(!c.email||c.password.length<6){sbMsg('Enter your email and a password of at least 6 characters.'); return}
   sbMsg('Creating your account…');
+  sbBusy(true);
   SB.auth.signUp(c).then(function(r){
-    if(r.error) sbMsg(r.error.message);
-    else if(!r.data.session) sbMsg('Account created. Open the email we sent to confirm it, then sign in here.');
+    sbBusy(false);
+    if(r.error) sbMsg(sbErr(r.error));
+    else if(!r.data.session) sbMsg('Account created. Tap the link in the email we sent you (the page it opens may not load, which is fine), then come back and sign in here.');
     else toast('Account created. Syncing your log.');
-  },function(){sbMsg('Could not reach the sync server. Check your connection and try again.')});
+  },function(){sbBusy(false); sbMsg('Could not reach the sync server. Check your connection and try again.')});
 }
 
 /* ---------- colours ---------- */
