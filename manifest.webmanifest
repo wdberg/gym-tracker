@@ -1,0 +1,13 @@
+{
+  "name": "Gym Guide & Tracker",
+  "short_name": "Gym",
+  "description": "Track workouts, build routines and run 2–12 week programs.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDEFF2",
+  "theme_color": "#D1400E",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
