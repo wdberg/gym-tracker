@@ -1,10 +1,11 @@
-# Publishes the app to GitHub Pages every time you push to main.
+# Publishes the app to GitHub Pages on every push to main or to the repository's current default branch.
+# GitHub only lets Pages deploy from the default branch, so both are listed.
 # Installed copies of the app pick up the new version automatically.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/clever-albattani-02sbmh]
   workflow_dispatch:
 
 permissions:
