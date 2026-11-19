@@ -232,7 +232,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.3.0';
+var APP_VERSION='2.4.0';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -323,7 +323,7 @@ var COLOR_KEYS=[['accent','Main colour (gym days, buttons, active tab)'],['work'
 
 function normalize(c){
   var o=clone(DEFAULT); if(!c||typeof c!=='object') return o;
-  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
+  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound','soundType','volume'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(o.start)) o.start=DEFAULT.start;
   o.weeks=Math.min(12,Math.max(2,parseInt(o.weeks,10)||12));
   if(!Array.isArray(o.week)||o.week.length!==7) o.week=DEFAULT.week.slice();
@@ -1086,14 +1086,34 @@ function restTick(force){
 }
 var actx=null;
 function unlockAudio(){try{ if(!actx){var C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C()} if(actx&&actx.state==='suspended') actx.resume() }catch(e){}}
-function beep(){
-  if(!actx) return;
-  try{[0,0.35,0.7].forEach(function(t){var o=actx.createOscillator(), g=actx.createGain(), st=actx.currentTime+t;
-    o.frequency.value=880; o.connect(g); g.connect(actx.destination);
-    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.5,st+0.02); g.gain.exponentialRampToValueAtTime(0.0001,st+0.25);
-    o.start(st); o.stop(st+0.27)})}catch(e){}
+// Timer sounds, synthesised so they work offline. Each is a list of tones.
+var SOUNDS=[['beep','Beep'],['chime','Chime'],['bell','Bell'],['boxing','Boxing bell'],['whistle','Whistle'],['buzzer','Buzzer'],['off','Off']];
+function soundType(){ if(cfg.soundType) return cfg.soundType; return cfg.sound===false?'off':'beep' }
+function soundVol(){ var v=parseInt(cfg.volume,10); return isNaN(v)?80:Math.min(100,Math.max(10,v)) }
+function tone(out,f,st,dur,wave,peak,fEnd){
+  var o=actx.createOscillator(), g=actx.createGain(); o.type=wave||'sine';
+  o.frequency.setValueAtTime(f,st); if(fEnd) o.frequency.exponentialRampToValueAtTime(fEnd,st+dur);
+  o.connect(g); g.connect(out);
+  g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(peak,st+0.015); g.gain.exponentialRampToValueAtTime(0.0001,st+dur);
+  o.start(st); o.stop(st+dur+0.05);
 }
-function restAlert(){ if(cfg.sound!==false) beep(); try{ if(navigator.vibrate) navigator.vibrate([300,150,300]) }catch(e){} }
+function strike(out,f,st,len,peak){ // bell: a fundamental plus fading overtones
+  tone(out,f,st,len,'sine',peak); tone(out,f*2.76,st,len*0.6,'sine',peak*0.35); tone(out,f*5.4,st,len*0.3,'sine',peak*0.15);
+}
+function playSound(type){
+  type=type||soundType(); if(type==='off'||!actx) return;
+  try{
+    var out=actx.createGain(), t=actx.currentTime+0.02; out.gain.value=soundVol()/100*0.9; out.connect(actx.destination);
+    if(type==='beep') [0,0.35,0.7].forEach(function(d){tone(out,880,t+d,0.25,'sine',0.6)});
+    else if(type==='chime') [1046.5,1318.5,1568,2093].forEach(function(f,i){tone(out,f,t+i*0.14,0.9,'sine',0.45)});
+    else if(type==='bell'){strike(out,660,t,1.8,0.6); strike(out,660,t+0.9,1.8,0.5)}
+    else if(type==='boxing') [0,0.22,0.44].forEach(function(d){strike(out,1046,t+d,0.6,0.55)});
+    else if(type==='whistle') [0,0.4].forEach(function(d){tone(out,1600,t+d,0.3,'sine',0.5,2600)});
+    else if(type==='buzzer') [0,0.5].forEach(function(d){tone(out,180,t+d,0.4,'square',0.25)});
+  }catch(e){}
+}
+function beep(){playSound()}
+function restAlert(){ playSound(); try{ if(navigator.vibrate) navigator.vibrate([300,150,300]) }catch(e){} }
 var wl=null;
 function wakeOn(){try{ if(navigator.wakeLock&&!wl) navigator.wakeLock.request('screen').then(function(x){wl=x; x.addEventListener('release',function(){wl=null})},function(){}) }catch(e){}}
 function wakeOff(){try{ if(wl) wl.release() }catch(e){} wl=null}
@@ -1108,8 +1128,10 @@ function timersSetup(){
   return '<div class="panel"><h2>Timers</h2><div class="field"><span class="lbl">Default rest between sets</span><div class="btnrow">'
     +[30,45,60,90,120,180].map(function(x){return '<button class="btnp sm'+(x===r?' primary':'')+'" data-act="set-rest" data-s="'+x+'" aria-pressed="'+(x===r)+'">'+(x%60?x+'s':(x/60)+' min')+'</button>'}).join('')+'</div></div>'
     +'<label class="check"><input type="checkbox" id="set-autorest"'+(cfg.autoRest!==false?' checked':'')+'> Start the rest timer when I tick off an exercise</label>'
-    +'<label class="check"><input type="checkbox" id="set-sound"'+(cfg.sound!==false?' checked':'')+'> Beep when rest is over</label>'
-    +'<p class="sub">The beep plays while the app is open. Your phone\'s silent switch may mute it.</p></div>';
+    +'<div class="field"><span class="lbl">Sound when rest is over</span><div class="btnrow">'
+    +SOUNDS.map(function(o){var on=soundType()===o[0]; return '<button class="btnp sm'+(on?' primary':'')+'" data-act="set-snd" data-v="'+o[0]+'" aria-pressed="'+on+'">'+(o[0]==='off'?'':'♪ ')+o[1]+'</button>'}).join('')+'</div></div>'
+    +(soundType()==='off'?'':'<div class="field"><label for="set-vol">Volume: '+soundVol()+'%</label><input type="range" id="set-vol" min="10" max="100" step="10" value="'+soundVol()+'" style="accent-color:var(--accent)"></div>')
+    +'<p class="sub">Tap a sound to hear it. Sounds play while the app is open, and your phone\'s silent switch may mute them.</p></div>';
 }
 
 /* ---------- backup ---------- */
@@ -1191,6 +1213,7 @@ app.addEventListener('click',function(ev){
   else if(a==='tm-reset') tmReset();
   else if(a==='tm-open'){var td=tmGet().date; if(td) state.sel=clamp(td); go('today')}
   else if(a==='rest') restStart(+b.dataset.s);
+  else if(a==='set-snd'){cfg.soundType=b.dataset.v; cfg.sound=b.dataset.v!=='off'; saveCfg(); render(); unlockAudio(); playSound(b.dataset.v)}
   else if(a==='set-rest'){cfg.rest=+b.dataset.s; saveCfg(); render(); toast('Default rest: '+(cfg.rest%60?cfg.rest+' seconds':(cfg.rest/60)+' min'))}
   else if(a==='status'){var l=W(date); l.status=(l.status===b.dataset.v)?'':b.dataset.v; if(!l.status) delete l.status; touch(date); render()}
   else if(a==='mode'){var l2=W(date); l2.mode=b.dataset.v; touch(date); render()}
@@ -1264,7 +1287,7 @@ app.addEventListener('change',function(ev){
   else if(el.dataset&&el.dataset.slot!==undefined){cfg.week[+el.dataset.slot]=el.value; saveCfg(); toast(wd(addDays(S(),+el.dataset.slot))+': '+slotLabel(el.value))}
   else if(el.id==='set-start'&&/^\d{4}-\d{2}-\d{2}$/.test(el.value)){cfg.start=el.value; saveCfg(); state.sel=clamp(state.sel); render(); toast('Start date changed')}
   else if(el.id==='set-autorest'){cfg.autoRest=el.checked; saveCfg()}
-  else if(el.id==='set-sound'){cfg.sound=el.checked; saveCfg(); if(el.checked){unlockAudio(); beep()}}
+  else if(el.id==='set-vol'){cfg.volume=+el.value; saveCfg(); render(); unlockAudio(); playSound()}
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
   else if(el.dataset&&el.dataset.color) render();
 });
