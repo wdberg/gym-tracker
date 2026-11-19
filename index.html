@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gym Tracker</title>
+  <meta name="description" content="Track workouts, build routines and run 2–12 week programs.">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="title">Gym Tracker</h1>
+    <span id="programBadge" class="badge"></span>
+  </header>
+
+  <div id="updateBanner" class="update-banner" hidden>
+    A new version is ready. <button id="updateNow" class="btn small">Update now</button>
+  </div>
+
+  <main id="view"></main>
+
+  <nav class="tabs" role="tablist">
+    <button data-tab="today" class="tab active" role="tab"><span class="ico">🏋️</span>Today</button>
+    <button data-tab="program" class="tab" role="tab"><span class="ico">📅</span>Program</button>
+    <button data-tab="routines" class="tab" role="tab"><span class="ico">📝</span>Routines</button>
+    <button data-tab="history" class="tab" role="tab"><span class="ico">📈</span>History</button>
+    <button data-tab="settings" class="tab" role="tab"><span class="ico">🎨</span>Settings</button>
+  </nav>
+
+  <div id="timer" class="rest-timer" hidden>
+    <span>Rest</span> <strong id="timerValue">0:00</strong>
+    <button id="timerAdd" class="btn small ghost">+15s</button>
+    <button id="timerStop" class="btn small ghost">✕</button>
+  </div>
+
+  <dialog id="modal"><form method="dialog" id="modalForm"></form></dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
