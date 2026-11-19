@@ -179,6 +179,17 @@ ul.plain{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6
 .colorrow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:6px 0; border-top:1px solid var(--line)}
 .colorrow:first-child{border-top:0}
 .colorrow input{width:56px; height:40px; border:1px solid var(--line); border-radius:10px; background:var(--bg); padding:2px; cursor:pointer}
+/* Timers */
+.timer{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.timer .clock{font:700 48px/1 var(--display); font-variant-numeric:tabular-nums; color:var(--mode)}
+.timer small{display:block; color:var(--muted); font-size:13px; margin-top:4px}
+.restquick{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.restbar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(70px + env(safe-area-inset-bottom,0px)); z-index:15; display:flex; align-items:center; gap:10px; background:var(--accent); color:var(--accent-ink); padding:8px 8px 8px 18px; border-radius:99px; box-shadow:0 6px 20px rgb(0 0 0 / .28); font-weight:600; max-width:calc(100% - 24px); white-space:nowrap}
+.restbar .clock{font:700 28px/1 var(--display); font-variant-numeric:tabular-nums; min-width:62px}
+.restbar button{min-height:40px; border:1.5px solid currentColor; background:transparent; color:inherit; border-radius:99px; padding:4px 14px; font-weight:600}
+.restbar.done{background:var(--done); color:var(--on-status)}
+body.resting .app{padding-bottom:170px}
+.tpill{border:0; cursor:pointer; background:var(--accent); color:var(--accent-ink); font-variant-numeric:tabular-nums}
 .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(76px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:99px; font-weight:600; font-size:15px; z-index:20; max-width:calc(100% - 32px)}
 
 .howbtn{margin-left:6px; min-height:30px; font:600 12px var(--body,system-ui); letter-spacing:.05em; text-transform:uppercase; padding:3px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface2,#fff); color:var(--muted); cursor:pointer; vertical-align:middle}
@@ -215,12 +226,13 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 
 <div class="app" id="app"></div>
 <nav class="tabs" aria-label="Sections"><div class="in" id="tabs"></div></nav>
+<div class="restbar" id="restbar" role="timer" aria-live="polite" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.2.0';
+var APP_VERSION='2.3.0';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -311,7 +323,7 @@ var COLOR_KEYS=[['accent','Main colour (gym days, buttons, active tab)'],['work'
 
 function normalize(c){
   var o=clone(DEFAULT); if(!c||typeof c!=='object') return o;
-  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
+  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(o.start)) o.start=DEFAULT.start;
   o.weeks=Math.min(12,Math.max(2,parseInt(o.weeks,10)||12));
   if(!Array.isArray(o.week)||o.week.length!==7) o.week=DEFAULT.week.slice();
@@ -599,6 +611,7 @@ function viewToday(){
   if(TODAY<S()&&date===S()) h+='<p class="note">Your block starts on '+esc(dLong(S()))+'. This is your first session.</p>';
   if(TODAY>E()&&date===E()) h+='<p class="note">Your '+cfg.weeks+'-week block finished on '+esc(dLong(E()))+'. Start a new one from Setup.</p>';
   h+='<div><div class="eyebrow">'+esc(p.focus)+'</div><h1 class="title">'+esc(title)+'</h1><p class="sub">'+(sess?esc(sess.dur)+(mode==='work'?' · moderate effort, 2–3 reps in reserve':' · keep 2–3 reps in reserve'):esc(p.target))+'</p></div>';
+  if(p.type!=='rest') h+=timerPanel(date);
   if(p.weights){
     if(hasWork(p)) h+='<div class="seg modes" role="group" aria-label="Where are you training"><button data-act="mode" data-v="gym" aria-pressed="'+(mode==='gym')+'">Gym</button><button data-act="mode" data-v="work" aria-pressed="'+(mode==='work')+'">At work</button></div>';
     if(mode==='work') h+='<p class="note">Exhausted after a 12.5-hour shift? Shorten to 20–30 minutes or do mobility only. Consistency beats heroics.</p>';
@@ -750,6 +763,7 @@ function viewSetup(){
   h+='</div>';
   if(!cfg.theme) h+='<h3>Light or dark</h3><div class="seg" role="group" aria-label="Light or dark">'+[['auto','Match phone'],['light','Light'],['dark','Dark']].map(function(m){return '<button data-act="tmode" data-v="'+m[0]+'" aria-pressed="'+(cfg.mode===m[0])+'">'+m[1]+'</button>'}).join('')+'</div>';
   h+='<div class="btnrow"><button class="btnp sm" data-act="preset" data-v="original">Reset to original colours</button></div></div>';
+  h+=timersSetup();
   h+='<div class="panel"><div class="field"><label for="set-name">App name</label><input id="set-name" value="'+esc(cfg.name)+'" maxlength="30"></div></div>';
   h+='<div class="panel"><h2>App</h2><p class="sub">Version '+APP_VERSION+'. '+(swReg?'Updates install by themselves when a new version is published.':'This copy always shows the latest version.')+'</p>'
     +(swReg?'<div class="btnrow"><button class="btnp sm" data-act="check-update">Check for updates</button></div>':'')+'</div>';
@@ -1021,6 +1035,83 @@ function xProgress(x){
   return h+'</div>';
 }
 
+/* ---------- timers: workout timer + rest timer ---------- */
+var TM_LS='gt-timer.v1', RS_LS='gt-rest.v1';
+function lsJ(k){try{return JSON.parse(localStorage.getItem(k)||'null')||{}}catch(e){return {}}}
+function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function tmGet(){return lsJ(TM_LS)}
+function tmElapsed(t){t=t||tmGet(); return (t.acc||0)+(t.start?Date.now()-t.start:0)}
+function tmActive(t){t=t||tmGet(); return !!(t.start||t.acc)}
+function clock(ms){var s=Math.max(0,Math.floor(ms/1000)), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h?h+':'+pad(m):m)+':'+pad(x)}
+function restSecs(){return parseInt(cfg.rest,10)||90}
+function tmStart(){var t=tmGet(); if(!t.date) t.date=state.sel; t.start=Date.now(); lsS(TM_LS,t); wakeOn(); render()}
+function tmPause(){var t=tmGet(); if(t.start){t.acc=(t.acc||0)+Date.now()-t.start; t.start=null; lsS(TM_LS,t)} wakeOff(); render()}
+function tmReset(){lsS(TM_LS,{}); wakeOff(); render()}
+function tmFinish(){
+  var t=tmGet(), ms=tmElapsed(t), d=t.date||state.sel;
+  if(ms<1000){tmReset(); return}
+  var l=W(d); l.minutes=String(Math.max(1,Math.round(ms/60000))); touch(d);
+  lsS(TM_LS,{}); wakeOff(); restStop(); render(); toast('Logged '+l.minutes+' min on '+dShort(d));
+}
+function timerPanel(date){
+  var t=tmGet(), on=!!t.start, act=tmActive(t), other=act&&t.date&&t.date!==date;
+  var btns=!act?'<button class="btnp primary" data-act="tm-start">Start workout</button>'
+    :(on?'<button class="btnp" data-act="tm-pause">Pause</button>':'<button class="btnp" data-act="tm-start">Resume</button>')
+     +'<button class="btnp primary" data-act="tm-finish">Finish &amp; log</button>'+(on?'':'<button class="btnp" data-act="tm-reset">Reset</button>');
+  var r=restSecs(), opts=[60,90,120]; if(opts.indexOf(r)<0) opts.unshift(r);
+  return '<div class="panel"><div class="timer"><div><h3>Workout timer</h3><div class="clock" id="tm-clock">'+clock(tmElapsed(t))+'</div>'
+    +'<small>'+(other?'Started '+esc(dShort(t.date))+'. Finish logs the time to that day.':!act?'Finish fills in your minutes below.':on?'Running. The screen stays on.':'Paused')+'</small></div>'
+    +'<div class="btnrow">'+btns+'</div></div>'
+    +'<div class="restquick"><span class="lbl">Rest</span>'+opts.map(function(x){return '<button class="btnp sm" data-act="rest" data-s="'+x+'">'+(x%60?x+'s':(x/60)+' min')+'</button>'}).join('')+'</div></div>';
+}
+// Rest countdown (kept across app switches)
+var rest=lsJ(RS_LS);
+function restSave(){lsS(RS_LS,{end:rest.end||0})}
+function restStart(sec){unlockAudio(); rest={end:Date.now()+sec*1000}; restSave(); restTick(true)}
+function restAdd(sec){ if(rest.end){rest.end+=sec*1000; restSave()} restTick(true)}
+function restStop(){rest={}; restSave(); restTick(true)}
+function restTick(force){
+  var bar=document.getElementById('restbar'); if(!bar) return;
+  var now=Date.now(), mode='';
+  if(rest.end&&rest.end<=now){ rest={doneAt:now}; restSave(); restAlert() }
+  if(rest.end) mode='run'; else if(rest.doneAt&&now-rest.doneAt<5000) mode='done';
+  if(!mode){ if(!bar.hidden){bar.hidden=true; bar.dataset.mode=''; document.body.classList.remove('resting')} return }
+  if(bar.dataset.mode!==mode||force){
+    bar.dataset.mode=mode; bar.className='restbar'+(mode==='done'?' done':'');
+    bar.innerHTML=mode==='run'?'<span>Rest</span><span class="clock" id="rest-clock"></span><button data-act="rest-add">+15s</button><button data-act="rest-stop">Skip</button>'
+      :'<span>Rest over. Next set!</span><button data-act="rest-stop">OK</button>';
+    bar.hidden=false; document.body.classList.add('resting');
+  }
+  var c=document.getElementById('rest-clock'); if(c) c.textContent=clock(rest.end-now+999);
+}
+var actx=null;
+function unlockAudio(){try{ if(!actx){var C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C()} if(actx&&actx.state==='suspended') actx.resume() }catch(e){}}
+function beep(){
+  if(!actx) return;
+  try{[0,0.35,0.7].forEach(function(t){var o=actx.createOscillator(), g=actx.createGain(), st=actx.currentTime+t;
+    o.frequency.value=880; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.5,st+0.02); g.gain.exponentialRampToValueAtTime(0.0001,st+0.25);
+    o.start(st); o.stop(st+0.27)})}catch(e){}
+}
+function restAlert(){ if(cfg.sound!==false) beep(); try{ if(navigator.vibrate) navigator.vibrate([300,150,300]) }catch(e){} }
+var wl=null;
+function wakeOn(){try{ if(navigator.wakeLock&&!wl) navigator.wakeLock.request('screen').then(function(x){wl=x; x.addEventListener('release',function(){wl=null})},function(){}) }catch(e){}}
+function wakeOff(){try{ if(wl) wl.release() }catch(e){} wl=null}
+document.addEventListener('visibilitychange',function(){ if(!document.hidden){ if(tmGet().start) wakeOn(); restTick(true) } });
+setInterval(function(){
+  var ms=tmElapsed(), c=document.getElementById('tm-clock'); if(c) c.textContent=clock(ms);
+  var pl=document.getElementById('tm-pill'); if(pl) pl.textContent='⏱ '+clock(ms);
+  restTick();
+},500);
+function timersSetup(){
+  var r=restSecs();
+  return '<div class="panel"><h2>Timers</h2><div class="field"><span class="lbl">Default rest between sets</span><div class="btnrow">'
+    +[30,45,60,90,120,180].map(function(x){return '<button class="btnp sm'+(x===r?' primary':'')+'" data-act="set-rest" data-s="'+x+'" aria-pressed="'+(x===r)+'">'+(x%60?x+'s':(x/60)+' min')+'</button>'}).join('')+'</div></div>'
+    +'<label class="check"><input type="checkbox" id="set-autorest"'+(cfg.autoRest!==false?' checked':'')+'> Start the rest timer when I tick off an exercise</label>'
+    +'<label class="check"><input type="checkbox" id="set-sound"'+(cfg.sound!==false?' checked':'')+'> Beep when rest is over</label>'
+    +'<p class="sub">The beep plays while the app is open. Your phone\'s silent switch may mute it.</p></div>';
+}
+
 /* ---------- backup ---------- */
 var dlCap=null;
 try{ if(window.claude&&window.claude.use) window.claude.use('downloads').then(function(d){dlCap=d||null},function(){}) }catch(e){}
@@ -1075,7 +1166,8 @@ function render(){
   var body=t==='week'?viewWeek():t==='guide'?viewGuide():t==='plan'?viewPlan():t==='progress'?viewProgress():t==='k14'?view14():t==='setup'?viewSetup():viewToday();
   var p=plan(sel), workMode=t==='today'&&p.weights&&modeOf(p,L(sel))==='work';
   app.className='app'+(workMode||(t==='plan'&&state.edit&&state.edit.side==='work')?' is-work':'');
-  app.innerHTML='<div class="topbar"><span class="brand">'+esc(cfg.name||'Gym Tracker')+'</span><span class="sync" id="sync" role="status"></span></div>'+(t==='setup'||t==='plan'?'':musicBar())+body;
+  var tmr=tmGet(), pill=(tmr.start&&t!=='today')?'<button class="chip tpill" id="tm-pill" data-act="tm-open">⏱ '+clock(tmElapsed(tmr))+'</button>':'';
+  app.innerHTML='<div class="topbar"><span class="brand">'+esc(cfg.name||'Gym Tracker')+'</span>'+pill+'<span class="sync" id="sync" role="status"></span></div>'+(t==='setup'||t==='plan'?'':musicBar())+body;
   addHow();
   document.getElementById('tabs').innerHTML=TABS.map(function(x){return '<a href="#'+x[0]+'"'+(x[0]===t?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('');
   setSync();
@@ -1090,8 +1182,16 @@ function lines(id){return document.getElementById(id).value.split('\n').map(func
 
 var app=document.getElementById('app');
 app.addEventListener('click',function(ev){
+  unlockAudio();
   var b=ev.target.closest('[data-act]'); if(!b||b.disabled) return; var a=b.dataset.act, date=state.sel, e=state.edit;
-  if(a==='chk'){var lg=W(date); lg.ex=lg.ex||{}; var s=lg.ex[b.dataset.id]=lg.ex[b.dataset.id]||{}; s.d=!s.d; touch(date); render()}
+  if(a==='chk'){var lg=W(date); lg.ex=lg.ex||{}; var s=lg.ex[b.dataset.id]=lg.ex[b.dataset.id]||{}; s.d=!s.d; touch(date); render(); if(s.d&&b.dataset.id.charAt(0)!=='r'&&cfg.autoRest!==false) restStart(restSecs())}
+  else if(a==='tm-start') tmStart();
+  else if(a==='tm-pause') tmPause();
+  else if(a==='tm-finish') tmFinish();
+  else if(a==='tm-reset') tmReset();
+  else if(a==='tm-open'){var td=tmGet().date; if(td) state.sel=clamp(td); go('today')}
+  else if(a==='rest') restStart(+b.dataset.s);
+  else if(a==='set-rest'){cfg.rest=+b.dataset.s; saveCfg(); render(); toast('Default rest: '+(cfg.rest%60?cfg.rest+' seconds':(cfg.rest/60)+' min'))}
   else if(a==='status'){var l=W(date); l.status=(l.status===b.dataset.v)?'':b.dataset.v; if(!l.status) delete l.status; touch(date); render()}
   else if(a==='mode'){var l2=W(date); l2.mode=b.dataset.v; touch(date); render()}
   else if(a==='day'){state.sel=clamp(addDays(date,+b.dataset.d)); render(); window.scrollTo(0,0)}
@@ -1163,6 +1263,8 @@ app.addEventListener('change',function(ev){
   if(el.id==='impfile'&&el.files&&el.files[0]) importFile(el.files[0]);
   else if(el.dataset&&el.dataset.slot!==undefined){cfg.week[+el.dataset.slot]=el.value; saveCfg(); toast(wd(addDays(S(),+el.dataset.slot))+': '+slotLabel(el.value))}
   else if(el.id==='set-start'&&/^\d{4}-\d{2}-\d{2}$/.test(el.value)){cfg.start=el.value; saveCfg(); state.sel=clamp(state.sel); render(); toast('Start date changed')}
+  else if(el.id==='set-autorest'){cfg.autoRest=el.checked; saveCfg()}
+  else if(el.id==='set-sound'){cfg.sound=el.checked; saveCfg(); if(el.checked){unlockAudio(); beep()}}
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
   else if(el.dataset&&el.dataset.color) render();
 });
@@ -1170,6 +1272,7 @@ app.addEventListener('submit',function(ev){
   if(ev.target&&ev.target.id==='sb-form'){ev.preventDefault(); sbSignIn()}
   if(ev.target&&ev.target.id==='pw-form'){ev.preventDefault(); sbChangePw()}
 });
+document.getElementById('restbar').addEventListener('click',function(ev){var b=ev.target.closest('[data-act]'); if(!b) return; unlockAudio(); if(b.dataset.act==='rest-add') restAdd(15); else restStop()});
 window.addEventListener('hashchange',route);
 
 /* ---------- auto update (only the GitHub-hosted copy uses a service worker) ---------- */
@@ -1199,7 +1302,7 @@ try{
   }
 }catch(e){}
 
-applyTheme(); startSync(); route(); startDb();
+applyTheme(); startSync(); route(); startDb(); restTick(true); if(tmGet().start) wakeOn();
 })();
 </script>
 <!--/page-->
