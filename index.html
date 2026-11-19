@@ -232,7 +232,7 @@ nav.tabs a[aria-current="page"]{color:var(--ink); background:var(--surface2); bo
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2.4.0';
+var APP_VERSION='2.5.0';
 
 /* ---------- dates ---------- */
 function pad(n){return String(n).padStart(2,'0')}
@@ -323,7 +323,7 @@ var COLOR_KEYS=[['accent','Main colour (gym days, buttons, active tab)'],['work'
 
 function normalize(c){
   var o=clone(DEFAULT); if(!c||typeof c!=='object') return o;
-  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound','soundType','volume'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
+  ['name','start','weeks','week','routines','cardio','recovery','focus','theme','preset','mode','u','music','rest','autoRest','sound','soundType','volume','countdown'].forEach(function(k){ if(c[k]!==undefined) o[k]=c[k] });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(o.start)) o.start=DEFAULT.start;
   o.weeks=Math.min(12,Math.max(2,parseInt(o.weeks,10)||12));
   if(!Array.isArray(o.week)||o.week.length!==7) o.week=DEFAULT.week.slice();
@@ -1068,7 +1068,7 @@ function timerPanel(date){
 var rest=lsJ(RS_LS);
 function restSave(){lsS(RS_LS,{end:rest.end||0})}
 function restStart(sec){unlockAudio(); rest={end:Date.now()+sec*1000}; restSave(); restTick(true)}
-function restAdd(sec){ if(rest.end){rest.end+=sec*1000; restSave()} restTick(true)}
+function restAdd(sec){ if(rest.end){rest.end+=sec*1000; rest.spoken=0; restSave()} restTick(true)}
 function restStop(){rest={}; restSave(); restTick(true)}
 function restTick(force){
   var bar=document.getElementById('restbar'); if(!bar) return;
@@ -1083,9 +1083,10 @@ function restTick(force){
     bar.hidden=false; document.body.classList.add('resting');
   }
   var c=document.getElementById('rest-clock'); if(c) c.textContent=clock(rest.end-now+999);
+  if(mode==='run'&&countdownOn()){var left=Math.ceil((rest.end-now)/1000); if(left>=1&&left<=3&&rest.spoken!==left){rest.spoken=left; speak(String(left))}}
 }
 var actx=null;
-function unlockAudio(){try{ if(!actx){var C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C()} if(actx&&actx.state==='suspended') actx.resume() }catch(e){}}
+function unlockAudio(){unlockSpeech(); try{ if(!actx){var C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C()} if(actx&&actx.state==='suspended') actx.resume() }catch(e){}}
 // Timer sounds, synthesised so they work offline. Each is a list of tones.
 var SOUNDS=[['beep','Beep'],['chime','Chime'],['bell','Bell'],['boxing','Boxing bell'],['whistle','Whistle'],['buzzer','Buzzer'],['off','Off']];
 function soundType(){ if(cfg.soundType) return cfg.soundType; return cfg.sound===false?'off':'beep' }
@@ -1113,6 +1114,20 @@ function playSound(type){
   }catch(e){}
 }
 function beep(){playSound()}
+// Spoken countdown ("3, 2, 1") using the phone's built-in voice.
+var speechOK=false;
+function countdownOn(){return cfg.countdown!==false}
+function speak(text){
+  try{
+    if(!('speechSynthesis' in window)) return;
+    var u=new SpeechSynthesisUtterance(text); u.lang='en-AU'; u.rate=1.15; u.volume=soundVol()/100;
+    window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function unlockSpeech(){ // iPhones only allow speech after a tap, so say nothing once on the first tap
+  if(speechOK) return; speechOK=true;
+  try{ if('speechSynthesis' in window){var u=new SpeechSynthesisUtterance(' '); u.volume=0; window.speechSynthesis.speak(u)} }catch(e){}
+}
 function restAlert(){ playSound(); try{ if(navigator.vibrate) navigator.vibrate([300,150,300]) }catch(e){} }
 var wl=null;
 function wakeOn(){try{ if(navigator.wakeLock&&!wl) navigator.wakeLock.request('screen').then(function(x){wl=x; x.addEventListener('release',function(){wl=null})},function(){}) }catch(e){}}
@@ -1122,16 +1137,17 @@ setInterval(function(){
   var ms=tmElapsed(), c=document.getElementById('tm-clock'); if(c) c.textContent=clock(ms);
   var pl=document.getElementById('tm-pill'); if(pl) pl.textContent='⏱ '+clock(ms);
   restTick();
-},500);
+},250);
 function timersSetup(){
   var r=restSecs();
   return '<div class="panel"><h2>Timers</h2><div class="field"><span class="lbl">Default rest between sets</span><div class="btnrow">'
     +[30,45,60,90,120,180].map(function(x){return '<button class="btnp sm'+(x===r?' primary':'')+'" data-act="set-rest" data-s="'+x+'" aria-pressed="'+(x===r)+'">'+(x%60?x+'s':(x/60)+' min')+'</button>'}).join('')+'</div></div>'
     +'<label class="check"><input type="checkbox" id="set-autorest"'+(cfg.autoRest!==false?' checked':'')+'> Start the rest timer when I tick off an exercise</label>'
+    +'<label class="check"><input type="checkbox" id="set-countdown"'+(countdownOn()?' checked':'')+'> Count down the last 3 seconds out loud</label>'
     +'<div class="field"><span class="lbl">Sound when rest is over</span><div class="btnrow">'
     +SOUNDS.map(function(o){var on=soundType()===o[0]; return '<button class="btnp sm'+(on?' primary':'')+'" data-act="set-snd" data-v="'+o[0]+'" aria-pressed="'+on+'">'+(o[0]==='off'?'':'♪ ')+o[1]+'</button>'}).join('')+'</div></div>'
-    +(soundType()==='off'?'':'<div class="field"><label for="set-vol">Volume: '+soundVol()+'%</label><input type="range" id="set-vol" min="10" max="100" step="10" value="'+soundVol()+'" style="accent-color:var(--accent)"></div>')
-    +'<p class="sub">Tap a sound to hear it. Sounds play while the app is open, and your phone\'s silent switch may mute them.</p></div>';
+    +(soundType()==='off'&&!countdownOn()?'':'<div class="field"><label for="set-vol">Volume: '+soundVol()+'%</label><input type="range" id="set-vol" min="10" max="100" step="10" value="'+soundVol()+'" style="accent-color:var(--accent)"></div>')
+    +'<p class="sub">Tap a sound to hear it. The volume also sets the countdown voice. Sounds play while the app is open, and your phone\'s silent switch may mute them.</p></div>';
 }
 
 /* ---------- backup ---------- */
@@ -1287,6 +1303,7 @@ app.addEventListener('change',function(ev){
   else if(el.dataset&&el.dataset.slot!==undefined){cfg.week[+el.dataset.slot]=el.value; saveCfg(); toast(wd(addDays(S(),+el.dataset.slot))+': '+slotLabel(el.value))}
   else if(el.id==='set-start'&&/^\d{4}-\d{2}-\d{2}$/.test(el.value)){cfg.start=el.value; saveCfg(); state.sel=clamp(state.sel); render(); toast('Start date changed')}
   else if(el.id==='set-autorest'){cfg.autoRest=el.checked; saveCfg()}
+  else if(el.id==='set-countdown'){cfg.countdown=el.checked; saveCfg(); render(); if(el.checked){unlockAudio(); speak('3, 2, 1')}}
   else if(el.id==='set-vol'){cfg.volume=+el.value; saveCfg(); render(); unlockAudio(); playSound()}
   else if(el.id==='set-name'){cfg.name=el.value.trim()||'Gym Tracker'; saveCfg(); render()}
   else if(el.dataset&&el.dataset.color) render();
