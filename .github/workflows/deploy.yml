@@ -1,5 +1,5 @@
-# Publishes the app to GitHub Pages on every push to main or to the repository's current default branch.
-# GitHub only lets Pages deploy from the default branch, so both are listed.
+# Publishes the app to GitHub Pages on every push to the repository's default branch
+# (main, or the app branch while that is still the default).
 # Installed copies of the app pick up the new version automatically.
 name: Deploy to GitHub Pages
 
@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Pages only accepts deploys from the default branch, so skip pushes to the other one.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     environment:
       name: github-pages
